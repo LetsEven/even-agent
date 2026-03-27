@@ -1,0 +1,14 @@
+{
+  "sqlServer": {
+    "host": "localhost",
+    "database": "softrestaurant10",
+    "port": 1433,
+    "user": "sa",
+    "password": ""
+  },
+  "xquisito": {
+    "branchId": "TU_BRANCH_ID",
+    "syncToken": "TU_SYNC_TOKEN",
+    "wsUrl": "https://xquisito-backend-production.up.railway.app/sync"
+  }
+}

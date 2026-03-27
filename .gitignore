@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+
+# Config con credenciales
+config.json
+
+# Build
+dist/
+*.exe
+
+# Logs
+logs/
+*.log
+
+# Database
+*.db
+*.db-wal
+*.db-shm
+
+# Windows Service daemon files
+daemon/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+test-discovery.ps1
+test-discovery.rar
+
+nul
+
+CLAUDE.md

@@ -1,0 +1,47 @@
+{
+  "name": "xquisito-agent",
+  "version": "1.0.0",
+  "description": "Agente de sincronizacion Xquisito - Soft Restaurant",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win",
+    "agent": "node src/agent.js"
+  },
+  "author": "Xquisito",
+  "license": "UNLICENSED",
+  "dependencies": {
+    "electron-store": "^8.1.0",
+    "mssql": "^10.0.4",
+    "socket.io-client": "^4.8.3"
+  },
+  "devDependencies": {
+    "electron": "^27.3.11",
+    "electron-builder": "^24.9.1"
+  },
+  "build": {
+    "appId": "com.xquisito.agent",
+    "productName": "Xquisito Agent",
+    "icon": "assets/icon-white.ico",
+    "win": {
+      "target": "portable",
+      "signAndEditExecutable": false,
+      "artifactName": "Xquisito Agent.${ext}",
+      "icon": "assets/icon-white.ico"
+    },
+    "files": [
+      "src/**/*",
+      "assets/**/*",
+      "config.example.json"
+    ],
+    "extraResources": [
+      {
+        "from": "config.example.json",
+        "to": "config.example.json"
+      }
+    ]
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
