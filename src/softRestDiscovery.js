@@ -948,10 +948,17 @@ function discoverSqlConfig() {
         console.log("[DISCOVERY] Database:", normalized.database);
         console.log("[DISCOVERY] User:", normalized.user || "(sin usuario)");
 
+        // Detectar VPN disponible para mostrar como opción
+        const vpnIp = getVpnIp();
+        if (vpnIp) {
+          console.log("[DISCOVERY] VPN detectada:", vpnIp);
+        }
+
         return {
           found: true,
           config: normalized,
           source: configFile,
+          vpnIp: vpnIp || null,
         };
       }
     }

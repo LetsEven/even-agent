@@ -1,0 +1,409 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  user-select: none;
+}
+
+body {
+  font-family: "Segoe UI", Tahoma, sans-serif;
+  background: #1a1a2e;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+.container {
+  padding: 16px 24px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.logo {
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+.logo-icon {
+  width: 50px;
+  height: 50px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 8px;
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.3);
+}
+
+.logo h1 {
+  font-size: 18px;
+  color: #fff;
+  font-weight: 600;
+}
+
+.logo p {
+  color: #666;
+  font-size: 11px;
+  margin-top: 2px;
+}
+
+.status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  margin-bottom: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.status-bar.connected {
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+}
+
+.status-bar.disconnected {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+.status-bar.connected .status-dot {
+  background: #22c55e;
+}
+.status-bar.disconnected .status-dot {
+  background: #ef4444;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.section-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: #667eea;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 12px 0 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #2a2a4a;
+}
+
+.form-group {
+  margin-bottom: 10px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 10px;
+  font-weight: 600;
+  color: #888;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 8px 10px;
+  background: #16213e;
+  border: 2px solid #2a2a4a;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #fff;
+  transition: border-color 0.2s;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.form-group input::placeholder {
+  color: #444;
+}
+
+.form-row {
+  display: flex;
+  gap: 10px;
+}
+
+.form-row .form-group {
+  flex: 1;
+}
+
+.form-row .form-group.small {
+  flex: 0 0 80px;
+}
+
+.buttons {
+  margin-top: auto;
+  padding-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.btn {
+  width: 100%;
+  padding: 10px;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    transform 0.1s,
+    opacity 0.2s;
+}
+
+.btn:hover {
+  opacity: 0.9;
+}
+.btn:active {
+  transform: scale(0.98);
+}
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.btn-secondary {
+  background: #2a2a4a;
+  color: #888;
+}
+
+.btn-secondary:hover {
+  color: #fff;
+}
+
+.btn-success {
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+  color: white;
+}
+
+.btn-small {
+  padding: 6px 10px;
+  font-size: 11px;
+}
+
+.message {
+  padding: 6px 10px;
+  border-radius: 6px;
+  margin-top: 8px;
+  font-size: 11px;
+  text-align: center;
+  display: none;
+}
+
+.message.success {
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+  display: block;
+}
+
+.message.error {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  display: block;
+}
+
+.message.info {
+  background: rgba(102, 126, 234, 0.15);
+  color: #667eea;
+  display: block;
+}
+
+/* SQL Onboarding Styles */
+.sql-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: #16213e;
+  border-radius: 6px;
+  margin-bottom: 10px;
+}
+
+.sql-status-icon {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+}
+
+.sql-status-icon.configured {
+  background: rgba(34, 197, 94, 0.2);
+  color: #22c55e;
+}
+
+.sql-status-icon.not-configured {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+}
+
+.sql-status-icon.loading {
+  background: rgba(102, 126, 234, 0.2);
+  color: #667eea;
+}
+
+.sql-status-info {
+  flex: 1;
+}
+
+.sql-status-info h3 {
+  font-size: 12px;
+  color: #fff;
+  font-weight: 600;
+}
+
+.sql-status-info p {
+  font-size: 10px;
+  color: #888;
+  margin-top: 2px;
+}
+
+.sql-status-action {
+  font-size: 11px;
+}
+
+.onboarding-modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  z-index: 100;
+  align-items: center;
+  justify-content: center;
+}
+
+.onboarding-modal.active {
+  display: flex;
+}
+
+.onboarding-content {
+  background: #1a1a2e;
+  border-radius: 12px;
+  padding: 20px;
+  width: 90%;
+  max-width: 360px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.onboarding-header {
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.onboarding-header h2 {
+  font-size: 16px;
+  color: #fff;
+  margin-bottom: 4px;
+}
+
+.onboarding-header p {
+  font-size: 11px;
+  color: #888;
+}
+
+.onboarding-step {
+  display: none;
+  animation: fadeIn 0.3s ease;
+}
+
+.onboarding-step.active {
+  display: block;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.step-indicator {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.step-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #2a2a4a;
+}
+
+.step-dot.active {
+  background: #667eea;
+}
+
+.step-dot.done {
+  background: #22c55e;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #2a2a4a;
+  border-top-color: #667eea;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 20px auto;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.step-result {
+  text-align: center;
+  padding: 16px;
+}
+
+.step-result-icon {
+  font-size: 40px;
+  margin-bottom: 12px;
+}
+
+.hidden {
+  display: none !important;
+}

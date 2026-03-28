@@ -42,9 +42,7 @@ function generateSecurePassword() {
   return password;
 }
 
-/**
- * Obtiene las credenciales guardadas
- */
+// Obtiene las credenciales guardadas
 function getSavedCredentials() {
   if (!credentialStore.get("isConfigured")) {
     return null;
@@ -58,9 +56,7 @@ function getSavedCredentials() {
   };
 }
 
-/**
- * Guarda las credenciales de forma encriptada
- */
+// Guarda las credenciales de forma encriptada
 function saveCredentials(credentials) {
   credentialStore.set("host", credentials.host);
   credentialStore.set("database", credentials.database);
@@ -69,16 +65,12 @@ function saveCredentials(credentials) {
   credentialStore.set("isConfigured", true);
 }
 
-/**
- * Limpia las credenciales guardadas
- */
+// Limpia las credenciales guardadas
 function clearCredentials() {
   credentialStore.clear();
 }
 
-/**
- * Verifica si las credenciales ya están configuradas
- */
+// Verifica si las credenciales ya están configuradas
 function isConfigured() {
   return credentialStore.get("isConfigured", false);
 }
@@ -349,11 +341,7 @@ async function createAppUser(adminConfig) {
   }
 }
 
-/**
- * Flujo completo de onboarding
- * @param {object} params - { host, database, port, adminUser?, adminPassword?, skipDiscovery? }
- * @returns {object} - Estado del onboarding
- */
+// Flujo completo de onboarding
 async function runOnboarding(params = {}) {
   console.log("[ONBOARDING] Iniciando...");
 
@@ -555,7 +543,6 @@ async function runOnboarding(params = {}) {
 /**
  * Obtiene la configuración SQL para usar en conexiones
  * Soporta instancias nombradas (servidor\instancia) y puertos dinámicos
- * @returns {object|null} - Configuración SQL lista para usar
  */
 function getSqlConfig() {
   const creds = getSavedCredentials();

@@ -1,778 +1,562 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Xquisito Agent</title>
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      user-select: none;
-    }
-
-    body {
-      font-family: 'Segoe UI', Tahoma, sans-serif;
-      background: #1a1a2e;
-      height: 100vh;
-      overflow-y: auto;
-    }
-
-    .container {
-      padding: 16px 24px;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .logo {
-      text-align: center;
-      margin-bottom: 12px;
-    }
-
-    .logo-icon {
-      width: 50px;
-      height: 50px;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin: 0 auto 8px;
-      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.3);
-    }
-
-    .logo h1 {
-      font-size: 18px;
-      color: #fff;
-      font-weight: 600;
-    }
-
-    .logo p {
-      color: #666;
-      font-size: 11px;
-      margin-top: 2px;
-    }
-
-    .status-bar {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      padding: 6px 12px;
-      border-radius: 6px;
-      margin-bottom: 12px;
-      font-size: 12px;
-      font-weight: 500;
-    }
-
-    .status-bar.connected {
-      background: rgba(34, 197, 94, 0.15);
-      color: #22c55e;
-    }
-
-    .status-bar.disconnected {
-      background: rgba(239, 68, 68, 0.15);
-      color: #ef4444;
-    }
-
-    .status-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      animation: pulse 2s infinite;
-    }
-
-    .status-bar.connected .status-dot { background: #22c55e; }
-    .status-bar.disconnected .status-dot { background: #ef4444; }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.5; }
-    }
-
-    .section-title {
-      font-size: 11px;
-      font-weight: 600;
-      color: #667eea;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin: 12px 0 8px;
-      padding-bottom: 4px;
-      border-bottom: 1px solid #2a2a4a;
-    }
-
-    .form-group {
-      margin-bottom: 10px;
-    }
-
-    .form-group label {
-      display: block;
-      font-size: 10px;
-      font-weight: 600;
-      color: #888;
-      margin-bottom: 4px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    .form-group input {
-      width: 100%;
-      padding: 8px 10px;
-      background: #16213e;
-      border: 2px solid #2a2a4a;
-      border-radius: 6px;
-      font-size: 12px;
-      color: #fff;
-      transition: border-color 0.2s;
-    }
-
-    .form-group input:focus {
-      outline: none;
-      border-color: #667eea;
-    }
-
-    .form-group input::placeholder {
-      color: #444;
-    }
-
-    .form-row {
-      display: flex;
-      gap: 10px;
-    }
-
-    .form-row .form-group {
-      flex: 1;
-    }
-
-    .form-row .form-group.small {
-      flex: 0 0 80px;
-    }
-
-    .buttons {
-      margin-top: auto;
-      padding-top: 12px;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .btn {
-      width: 100%;
-      padding: 10px;
-      border: none;
-      border-radius: 6px;
-      font-size: 12px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: transform 0.1s, opacity 0.2s;
-    }
-
-    .btn:hover { opacity: 0.9; }
-    .btn:active { transform: scale(0.98); }
-    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
-    .btn-primary {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-    }
-
-    .btn-secondary {
-      background: #2a2a4a;
-      color: #888;
-    }
-
-    .btn-secondary:hover {
-      color: #fff;
-    }
-
-    .btn-success {
-      background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
-      color: white;
-    }
-
-    .btn-small {
-      padding: 6px 10px;
-      font-size: 11px;
-    }
-
-    .message {
-      padding: 6px 10px;
-      border-radius: 6px;
-      margin-top: 8px;
-      font-size: 11px;
-      text-align: center;
-      display: none;
-    }
-
-    .message.success {
-      background: rgba(34, 197, 94, 0.15);
-      color: #22c55e;
-      display: block;
-    }
-
-    .message.error {
-      background: rgba(239, 68, 68, 0.15);
-      color: #ef4444;
-      display: block;
-    }
-
-    .message.info {
-      background: rgba(102, 126, 234, 0.15);
-      color: #667eea;
-      display: block;
-    }
-
-    /* SQL Onboarding Styles */
-    .sql-status {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 10px 12px;
-      background: #16213e;
-      border-radius: 6px;
-      margin-bottom: 10px;
-    }
-
-    .sql-status-icon {
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 14px;
-    }
-
-    .sql-status-icon.configured {
-      background: rgba(34, 197, 94, 0.2);
-      color: #22c55e;
-    }
-
-    .sql-status-icon.not-configured {
-      background: rgba(239, 68, 68, 0.2);
-      color: #ef4444;
-    }
-
-    .sql-status-icon.loading {
-      background: rgba(102, 126, 234, 0.2);
-      color: #667eea;
-    }
-
-    .sql-status-info {
-      flex: 1;
-    }
-
-    .sql-status-info h3 {
-      font-size: 12px;
-      color: #fff;
-      font-weight: 600;
-    }
-
-    .sql-status-info p {
-      font-size: 10px;
-      color: #888;
-      margin-top: 2px;
-    }
-
-    .sql-status-action {
-      font-size: 11px;
-    }
-
-    .onboarding-modal {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0, 0, 0, 0.8);
-      z-index: 100;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .onboarding-modal.active {
-      display: flex;
-    }
-
-    .onboarding-content {
-      background: #1a1a2e;
-      border-radius: 12px;
-      padding: 20px;
-      width: 90%;
-      max-width: 360px;
-      max-height: 90vh;
-      overflow-y: auto;
-    }
-
-    .onboarding-header {
-      text-align: center;
-      margin-bottom: 16px;
-    }
-
-    .onboarding-header h2 {
-      font-size: 16px;
-      color: #fff;
-      margin-bottom: 4px;
-    }
-
-    .onboarding-header p {
-      font-size: 11px;
-      color: #888;
-    }
-
-    .onboarding-step {
-      display: none;
-      animation: fadeIn 0.3s ease;
-    }
-
-    .onboarding-step.active {
-      display: block;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    .step-indicator {
-      display: flex;
-      justify-content: center;
-      gap: 8px;
-      margin-bottom: 16px;
-    }
-
-    .step-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: #2a2a4a;
-    }
-
-    .step-dot.active {
-      background: #667eea;
-    }
-
-    .step-dot.done {
-      background: #22c55e;
-    }
-
-    .loading-spinner {
-      width: 40px;
-      height: 40px;
-      border: 3px solid #2a2a4a;
-      border-top-color: #667eea;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-      margin: 20px auto;
-    }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-
-    .step-result {
-      text-align: center;
-      padding: 16px;
-    }
-
-    .step-result-icon {
-      font-size: 40px;
-      margin-bottom: 12px;
-    }
-
-    .hidden {
-      display: none !important;
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="logo">
-      <div class="logo-icon">
-        <img src="../assets/icon-white.ico" alt="Xquisito" style="width: 36px; height: 36px;">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Xquisito Agent</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="container">
+      <div class="logo">
+        <div class="logo-icon">
+          <img
+            src="../assets/icon-white.ico"
+            alt="Xquisito"
+            style="width: 36px; height: 36px"
+          />
+        </div>
+        <h1>Xquisito Agent</h1>
+        <p>Sincronizacion con Soft Restaurant</p>
       </div>
-      <h1>Xquisito Agent</h1>
-      <p>Sincronizacion con Soft Restaurant</p>
+
+      <div id="statusBar" class="status-bar disconnected">
+        <span class="status-dot"></span>
+        <span id="statusText">Desconectado</span>
+      </div>
+
+      <form id="configForm">
+        <div class="section-title">Xquisito Cloud</div>
+
+        <div class="form-group">
+          <label>Branch ID</label>
+          <input
+            type="text"
+            id="branchId"
+            placeholder="UUID de tu sucursal"
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label>Sync Token</label>
+          <input
+            type="text"
+            id="syncToken"
+            placeholder="Token del dashboard"
+            required
+          />
+        </div>
+
+        <div class="section-title">SQL Server</div>
+
+        <!-- SQL Status Card -->
+        <div id="sqlStatusCard" class="sql-status">
+          <div id="sqlStatusIcon" class="sql-status-icon not-configured">?</div>
+          <div class="sql-status-info">
+            <h3 id="sqlStatusTitle">No configurado</h3>
+            <p id="sqlStatusDesc">Haz clic para configurar</p>
+          </div>
+          <button
+            type="button"
+            id="btnConfigureSql"
+            class="btn btn-primary btn-small"
+          >
+            Configurar
+          </button>
+        </div>
+
+        <!-- Manual SQL Config (hidden by default, shown when SQL is configured) -->
+        <div id="sqlManualConfig" class="hidden">
+          <div class="form-group">
+            <label>Servidor</label>
+            <input
+              type="text"
+              id="sqlHost"
+              placeholder="localhost\SQLEXPRESS"
+              value="localhost\SQLEXPRESS"
+            />
+          </div>
+
+          <div class="form-group">
+            <label>Base de datos</label>
+            <input
+              type="text"
+              id="sqlDatabase"
+              placeholder="softrestaurant10"
+              value="softrestaurant10"
+            />
+          </div>
+        </div>
+
+        <div class="buttons">
+          <button type="submit" class="btn btn-primary">
+            Guardar y Conectar
+          </button>
+        </div>
+      </form>
+
+      <div id="message" class="message"></div>
     </div>
 
-    <div id="statusBar" class="status-bar disconnected">
-      <span class="status-dot"></span>
-      <span id="statusText">Desconectado</span>
-    </div>
-
-    <form id="configForm">
-      <div class="section-title">Xquisito Cloud</div>
-
-      <div class="form-group">
-        <label>Branch ID</label>
-        <input type="text" id="branchId" placeholder="UUID de tu sucursal" required>
-      </div>
-
-      <div class="form-group">
-        <label>Sync Token</label>
-        <input type="text" id="syncToken" placeholder="Token del dashboard" required>
-      </div>
-
-      <div class="section-title">SQL Server</div>
-
-      <!-- SQL Status Card -->
-      <div id="sqlStatusCard" class="sql-status">
-        <div id="sqlStatusIcon" class="sql-status-icon not-configured">?</div>
-        <div class="sql-status-info">
-          <h3 id="sqlStatusTitle">No configurado</h3>
-          <p id="sqlStatusDesc">Haz clic para configurar</p>
-        </div>
-        <button type="button" id="btnConfigureSql" class="btn btn-primary btn-small">Configurar</button>
-      </div>
-
-      <!-- Manual SQL Config (hidden by default, shown when SQL is configured) -->
-      <div id="sqlManualConfig" class="hidden">
-        <div class="form-group">
-          <label>Servidor</label>
-          <input type="text" id="sqlHost" placeholder="localhost\SQLEXPRESS" value="localhost\SQLEXPRESS">
+    <!-- SQL Onboarding Modal -->
+    <div id="onboardingModal" class="onboarding-modal">
+      <div class="onboarding-content">
+        <div class="onboarding-header">
+          <h2>Configurar SQL Server</h2>
+          <p>Ingresa los datos de conexion</p>
         </div>
 
-        <div class="form-group">
-          <label>Base de datos</label>
-          <input type="text" id="sqlDatabase" placeholder="softrestaurant10" value="softrestaurant10">
+        <!-- Step 0: Auto-discovering -->
+        <div id="step0" class="onboarding-step active">
+          <div class="step-result">
+            <div class="loading-spinner"></div>
+            <h3 style="color: #fff; font-size: 14px">
+              Buscando configuracion...
+            </h3>
+            <p style="color: #888; font-size: 11px; margin-top: 8px">
+              Detectando instalacion de Soft Restaurant
+            </p>
+          </div>
         </div>
-      </div>
 
-      <div class="buttons">
-        <button type="submit" class="btn btn-primary">Guardar y Conectar</button>
-      </div>
-    </form>
+        <!-- Step 1: All credentials in one form -->
+        <div id="step1" class="onboarding-step">
+          <div
+            id="discoveryResult"
+            class="hidden"
+            style="
+              margin-bottom: 12px;
+              padding: 10px;
+              background: rgba(34, 197, 94, 0.1);
+              border-radius: 8px;
+              border: 1px solid rgba(34, 197, 94, 0.3);
+            "
+          >
+            <p style="color: #22c55e; font-size: 11px; margin-bottom: 2px">
+              &#10003; Configuracion detectada
+            </p>
+            <p id="discoverySource" style="color: #888; font-size: 10px"></p>
+          </div>
+          <div
+            id="vpnOption"
+            class="hidden"
+            style="
+              margin-bottom: 12px;
+              padding: 10px;
+              background: rgba(102, 126, 234, 0.1);
+              border-radius: 8px;
+              border: 1px solid rgba(102, 126, 234, 0.3);
+            "
+          >
+            <p style="color: #667eea; font-size: 11px; margin-bottom: 6px">
+              &#128274; VPN detectada
+            </p>
+            <button
+              type="button"
+              id="btnUseVpn"
+              class="btn btn-secondary btn-small"
+              style="width: 100%"
+            ></button>
+          </div>
+          <div class="form-group">
+            <label>Servidor</label>
+            <input type="text" id="onbHost" placeholder="servidor\instancia" />
+          </div>
+          <div class="form-group">
+            <label>Base de datos</label>
+            <input
+              type="text"
+              id="onbDatabase"
+              placeholder="softrestaurant10"
+            />
+          </div>
+          <div class="form-group">
+            <label>Usuario</label>
+            <input type="text" id="onbSqlUser" placeholder="sa" />
+          </div>
+          <div class="form-group">
+            <label>Password</label>
+            <input type="password" id="onbSqlPassword" placeholder="••••••••" />
+          </div>
+          <div style="margin-top: 16px; display: flex; gap: 8px">
+            <button
+              type="button"
+              id="btnCancelOnboarding"
+              class="btn btn-secondary"
+              style="flex: 1"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              id="btnTestCredentials"
+              class="btn btn-primary"
+              style="flex: 2"
+            >
+              Conectar
+            </button>
+          </div>
+        </div>
 
-    <div id="message" class="message"></div>
-  </div>
+        <!-- Step 2: Testing connection -->
+        <div id="step2" class="onboarding-step">
+          <div class="step-result">
+            <div class="loading-spinner"></div>
+            <h3 style="color: #fff; font-size: 14px">Conectando...</h3>
+            <p style="color: #888; font-size: 11px; margin-top: 8px">
+              Verificando credenciales de SQL Server
+            </p>
+          </div>
+        </div>
 
-  <!-- SQL Onboarding Modal -->
-  <div id="onboardingModal" class="onboarding-modal">
-    <div class="onboarding-content">
-      <div class="onboarding-header">
-        <h2>Configurar SQL Server</h2>
-        <p>Ingresa los datos de conexion</p>
-      </div>
+        <!-- Step Success -->
+        <div id="stepSuccess" class="onboarding-step">
+          <div class="step-result">
+            <div class="step-result-icon" style="color: #22c55e">&#10003;</div>
+            <h3 style="color: #fff; font-size: 14px">SQL Server Configurado</h3>
+            <p
+              id="successMessage"
+              style="color: #888; font-size: 11px; margin-top: 8px"
+            ></p>
+          </div>
+          <button
+            type="button"
+            id="btnCloseSuccess"
+            class="btn btn-success"
+            style="margin-top: 16px"
+          >
+            Listo
+          </button>
+        </div>
 
-      <!-- Step 0: Auto-discovering -->
-      <div id="step0" class="onboarding-step active">
-        <div class="step-result">
-          <div class="loading-spinner"></div>
-          <h3 style="color: #fff; font-size: 14px;">Buscando configuracion...</h3>
-          <p style="color: #888; font-size: 11px; margin-top: 8px;">Detectando instalacion de Soft Restaurant</p>
-        </div>
-      </div>
-
-      <!-- Step 1: All credentials in one form -->
-      <div id="step1" class="onboarding-step">
-        <div id="discoveryResult" class="hidden" style="margin-bottom: 12px; padding: 10px; background: rgba(34, 197, 94, 0.1); border-radius: 8px; border: 1px solid rgba(34, 197, 94, 0.3);">
-          <p style="color: #22c55e; font-size: 11px; margin-bottom: 2px;">&#10003; Configuracion detectada</p>
-          <p id="discoverySource" style="color: #888; font-size: 10px;"></p>
-        </div>
-        <div class="form-group">
-          <label>Servidor</label>
-          <input type="text" id="onbHost" placeholder="servidor\instancia">
-        </div>
-        <div class="form-group">
-          <label>Base de datos</label>
-          <input type="text" id="onbDatabase" placeholder="softrestaurant10">
-        </div>
-        <div class="form-group">
-          <label>Usuario</label>
-          <input type="text" id="onbSqlUser" placeholder="sa">
-        </div>
-        <div class="form-group">
-          <label>Password</label>
-          <input type="password" id="onbSqlPassword" placeholder="••••••••">
-        </div>
-        <div style="margin-top: 16px; display: flex; gap: 8px;">
-          <button type="button" id="btnCancelOnboarding" class="btn btn-secondary" style="flex: 1;">Cancelar</button>
-          <button type="button" id="btnTestCredentials" class="btn btn-primary" style="flex: 2;">Conectar</button>
-        </div>
-      </div>
-
-      <!-- Step 2: Testing connection -->
-      <div id="step2" class="onboarding-step">
-        <div class="step-result">
-          <div class="loading-spinner"></div>
-          <h3 style="color: #fff; font-size: 14px;">Conectando...</h3>
-          <p style="color: #888; font-size: 11px; margin-top: 8px;">Verificando credenciales de SQL Server</p>
-        </div>
-      </div>
-
-      <!-- Step Success -->
-      <div id="stepSuccess" class="onboarding-step">
-        <div class="step-result">
-          <div class="step-result-icon" style="color: #22c55e;">&#10003;</div>
-          <h3 style="color: #fff; font-size: 14px;">SQL Server Configurado</h3>
-          <p id="successMessage" style="color: #888; font-size: 11px; margin-top: 8px;"></p>
-        </div>
-        <button type="button" id="btnCloseSuccess" class="btn btn-success" style="margin-top: 16px;">Listo</button>
-      </div>
-
-      <!-- Step Error -->
-      <div id="stepError" class="onboarding-step">
-        <div class="step-result">
-          <div class="step-result-icon" style="color: #ef4444;">&#10007;</div>
-          <h3 style="color: #fff; font-size: 14px;">Error de Configuracion</h3>
-          <p id="errorMessage" style="color: #ef4444; font-size: 11px; margin-top: 8px;"></p>
-        </div>
-        <div style="margin-top: 16px; display: flex; gap: 8px;">
-          <button type="button" id="btnRetry" class="btn btn-secondary" style="flex: 1;">Reintentar</button>
-          <button type="button" id="btnCloseError" class="btn btn-primary" style="flex: 1;">Cerrar</button>
+        <!-- Step Error -->
+        <div id="stepError" class="onboarding-step">
+          <div class="step-result">
+            <div class="step-result-icon" style="color: #ef4444">&#10007;</div>
+            <h3 style="color: #fff; font-size: 14px">Error de Configuracion</h3>
+            <p
+              id="errorMessage"
+              style="color: #ef4444; font-size: 11px; margin-top: 8px"
+            ></p>
+          </div>
+          <div style="margin-top: 16px; display: flex; gap: 8px">
+            <button
+              type="button"
+              id="btnRetry"
+              class="btn btn-secondary"
+              style="flex: 1"
+            >
+              Reintentar
+            </button>
+            <button
+              type="button"
+              id="btnCloseError"
+              class="btn btn-primary"
+              style="flex: 1"
+            >
+              Cerrar
+            </button>
+          </div>
         </div>
       </div>
     </div>
-  </div>
 
-  <script>
-    // Form elements
-    const form = document.getElementById('configForm');
-    const branchIdInput = document.getElementById('branchId');
-    const syncTokenInput = document.getElementById('syncToken');
-    const sqlHostInput = document.getElementById('sqlHost');
-    const sqlDatabaseInput = document.getElementById('sqlDatabase');
-    const statusBar = document.getElementById('statusBar');
-    const statusText = document.getElementById('statusText');
-    const message = document.getElementById('message');
+    <script>
+      // Form elements
+      const form = document.getElementById("configForm");
+      const branchIdInput = document.getElementById("branchId");
+      const syncTokenInput = document.getElementById("syncToken");
+      const sqlHostInput = document.getElementById("sqlHost");
+      const sqlDatabaseInput = document.getElementById("sqlDatabase");
+      const statusBar = document.getElementById("statusBar");
+      const statusText = document.getElementById("statusText");
+      const message = document.getElementById("message");
 
-    // SQL Status elements
-    const sqlStatusCard = document.getElementById('sqlStatusCard');
-    const sqlStatusIcon = document.getElementById('sqlStatusIcon');
-    const sqlStatusTitle = document.getElementById('sqlStatusTitle');
-    const sqlStatusDesc = document.getElementById('sqlStatusDesc');
-    const btnConfigureSql = document.getElementById('btnConfigureSql');
-    const sqlManualConfig = document.getElementById('sqlManualConfig');
+      // SQL Status elements
+      const sqlStatusCard = document.getElementById("sqlStatusCard");
+      const sqlStatusIcon = document.getElementById("sqlStatusIcon");
+      const sqlStatusTitle = document.getElementById("sqlStatusTitle");
+      const sqlStatusDesc = document.getElementById("sqlStatusDesc");
+      const btnConfigureSql = document.getElementById("btnConfigureSql");
+      const sqlManualConfig = document.getElementById("sqlManualConfig");
 
-    // Onboarding elements
-    const onboardingModal = document.getElementById('onboardingModal');
-    const onbHost = document.getElementById('onbHost');
-    const onbDatabase = document.getElementById('onbDatabase');
-    const onbSqlUser = document.getElementById('onbSqlUser');
-    const onbSqlPassword = document.getElementById('onbSqlPassword');
-    const discoveryResult = document.getElementById('discoveryResult');
-    const discoverySource = document.getElementById('discoverySource');
+      // Onboarding elements
+      const onboardingModal = document.getElementById("onboardingModal");
+      const onbHost = document.getElementById("onbHost");
+      const onbDatabase = document.getElementById("onbDatabase");
+      const onbSqlUser = document.getElementById("onbSqlUser");
+      const onbSqlPassword = document.getElementById("onbSqlPassword");
+      const discoveryResult = document.getElementById("discoveryResult");
+      const discoverySource = document.getElementById("discoverySource");
 
-    // State
-    let sqlConfigured = false;
-    let sqlCredentials = null;
-    let discoveredConfig = null;
+      // State
+      let sqlConfigured = false;
+      let sqlCredentials = null;
+      let discoveredConfig = null;
+      let detectedVpnIp = null;
 
-    // ============================================
-    // SQL Status Functions
-    // ============================================
+      // ============================================
+      // SQL Status Functions
+      // ============================================
 
-    async function checkSqlStatus() {
-      try {
-        const status = await window.xquisito.sqlOnboarding.getStatus();
-        sqlConfigured = status.isConfigured;
-        sqlCredentials = status.credentials;
-        updateSqlStatusUI();
-      } catch (error) {
-        console.error('Error checking SQL status:', error);
+      async function checkSqlStatus() {
+        try {
+          const status = await window.xquisito.sqlOnboarding.getStatus();
+          sqlConfigured = status.isConfigured;
+          sqlCredentials = status.credentials;
+          updateSqlStatusUI();
+        } catch (error) {
+          console.error("Error checking SQL status:", error);
+        }
       }
-    }
 
-    function updateSqlStatusUI() {
-      if (sqlConfigured && sqlCredentials) {
-        sqlStatusIcon.className = 'sql-status-icon configured';
-        sqlStatusIcon.textContent = '✓';
-        sqlStatusTitle.textContent = 'SQL Configurado';
-        sqlStatusDesc.textContent = `${sqlCredentials.host} - Usuario: ${sqlCredentials.user}`;
-        btnConfigureSql.textContent = 'Reconfigurar';
-        btnConfigureSql.className = 'btn btn-secondary btn-small';
+      function updateSqlStatusUI() {
+        if (sqlConfigured && sqlCredentials) {
+          sqlStatusIcon.className = "sql-status-icon configured";
+          sqlStatusIcon.textContent = "✓";
+          sqlStatusTitle.textContent = "SQL Configurado";
+          sqlStatusDesc.textContent = `${sqlCredentials.host} - Usuario: ${sqlCredentials.user}`;
+          btnConfigureSql.textContent = "Reconfigurar";
+          btnConfigureSql.className = "btn btn-secondary btn-small";
 
-        // Update manual config fields
-        sqlHostInput.value = sqlCredentials.host || '';
-        sqlDatabaseInput.value = sqlCredentials.database || '';
-        sqlManualConfig.classList.remove('hidden');
-      } else {
-        sqlStatusIcon.className = 'sql-status-icon not-configured';
-        sqlStatusIcon.textContent = '?';
-        sqlStatusTitle.textContent = 'No configurado';
-        sqlStatusDesc.textContent = 'Haz clic para configurar automaticamente';
-        btnConfigureSql.textContent = 'Configurar';
-        btnConfigureSql.className = 'btn btn-primary btn-small';
-        sqlManualConfig.classList.add('hidden');
+          // Update manual config fields
+          sqlHostInput.value = sqlCredentials.host || "";
+          sqlDatabaseInput.value = sqlCredentials.database || "";
+          sqlManualConfig.classList.remove("hidden");
+        } else {
+          sqlStatusIcon.className = "sql-status-icon not-configured";
+          sqlStatusIcon.textContent = "?";
+          sqlStatusTitle.textContent = "No configurado";
+          sqlStatusDesc.textContent =
+            "Haz clic para configurar automaticamente";
+          btnConfigureSql.textContent = "Configurar";
+          btnConfigureSql.className = "btn btn-primary btn-small";
+          sqlManualConfig.classList.add("hidden");
+        }
       }
-    }
 
-    // ============================================
-    // Onboarding Functions
-    // ============================================
+      // ============================================
+      // Onboarding Functions
+      // ============================================
 
-    function showStep(stepId) {
-      document.querySelectorAll('.onboarding-step').forEach(s => s.classList.remove('active'));
-      document.getElementById(stepId).classList.add('active');
-    }
+      function showStep(stepId) {
+        document
+          .querySelectorAll(".onboarding-step")
+          .forEach((s) => s.classList.remove("active"));
+        document.getElementById(stepId).classList.add("active");
+      }
 
-    async function openOnboarding() {
-      onboardingModal.classList.add('active');
-      showStep('step0');
-      discoveredConfig = null;
-      discoveryResult.classList.add('hidden');
+      async function openOnboarding() {
+        onboardingModal.classList.add("active");
+        showStep("step0");
+        discoveredConfig = null;
+        discoveryResult.classList.add("hidden");
 
-      // Clear fields
-      onbHost.value = '';
-      onbDatabase.value = '';
-      onbSqlUser.value = '';
-      onbSqlPassword.value = '';
+        // Clear fields
+        onbHost.value = "";
+        onbDatabase.value = "";
+        onbSqlUser.value = "";
+        onbSqlPassword.value = "";
 
-      // Start auto-discovery
-      try {
-        const discovery = await window.xquisito.sqlOnboarding.discover();
+        // Start auto-discovery
+        try {
+          const discovery = await window.xquisito.sqlOnboarding.discover();
 
-        if (discovery.found && discovery.config) {
-          discoveredConfig = discovery.config;
-          // Pre-fill with discovered values
-          onbHost.value = discovery.config.server || '';
-          onbDatabase.value = discovery.config.database || '';
-          onbSqlUser.value = discovery.config.user || '';
-          // Show discovery result
-          discoveryResult.classList.remove('hidden');
-          discoverySource.textContent = `Desde: ${discovery.source}`;
+          if (discovery.found && discovery.config) {
+            discoveredConfig = discovery.config;
+            // Pre-fill with discovered values
+            onbHost.value = discovery.config.server || "";
+            onbDatabase.value = discovery.config.database || "";
+            onbSqlUser.value = discovery.config.user || "";
+            onbSqlPassword.value = discovery.config.password || "";
+            // Show discovery result
+            discoveryResult.classList.remove("hidden");
+            discoverySource.textContent = `Desde: ${discovery.source}`;
+
+            // Show VPN option if available
+            if (discovery.vpnIp) {
+              detectedVpnIp = discovery.vpnIp;
+              document.getElementById("vpnOption").classList.remove("hidden");
+              document.getElementById("btnUseVpn").textContent =
+                `Usar IP VPN: ${discovery.vpnIp}`;
+            } else {
+              document.getElementById("vpnOption").classList.add("hidden");
+            }
+          }
+
+          showStep("step1");
+        } catch (error) {
+          console.error("Discovery error:", error);
+          showStep("step1");
+        }
+      }
+
+      function closeOnboarding() {
+        onboardingModal.classList.remove("active");
+      }
+
+      async function testAndSaveCredentials() {
+        const host = onbHost.value.trim();
+        const database = onbDatabase.value.trim();
+        const user = onbSqlUser.value.trim();
+        const password = onbSqlPassword.value;
+
+        if (!host || !database || !user || !password) {
+          showMessage("Todos los campos son requeridos", "error");
+          return;
         }
 
-        showStep('step1');
-      } catch (error) {
-        console.error('Discovery error:', error);
-        showStep('step1');
-      }
-    }
+        // Show step 2 - testing connection
+        showStep("step2");
 
-    function closeOnboarding() {
-      onboardingModal.classList.remove('active');
-    }
-
-    async function testAndSaveCredentials() {
-      const host = onbHost.value.trim();
-      const database = onbDatabase.value.trim();
-      const user = onbSqlUser.value.trim();
-      const password = onbSqlPassword.value;
-
-      if (!host || !database || !user || !password) {
-        showMessage('Todos los campos son requeridos', 'error');
-        return;
-      }
-
-      // Show step 2 - testing connection
-      showStep('step2');
-
-      try {
-        // Test the credentials first
-        const testResult = await window.xquisito.sqlOnboarding.testSql({
-          host,
-          database,
-          user,
-          password
-        });
-
-        if (testResult.success) {
-          // Credentials work! Save them
-          await window.xquisito.sqlOnboarding.saveSql({
+        try {
+          // Test the credentials first
+          const testResult = await window.xquisito.sqlOnboarding.testSql({
             host,
             database,
             user,
-            password
+            password,
           });
-          document.getElementById('successMessage').textContent = `Conectado a ${database}`;
-          showStep('stepSuccess');
-          await checkSqlStatus();
+
+          if (testResult.success) {
+            // Credentials work! Save them
+            await window.xquisito.sqlOnboarding.saveSql({
+              host,
+              database,
+              user,
+              password,
+            });
+            document.getElementById("successMessage").textContent =
+              `Conectado a ${database}`;
+            showStep("stepSuccess");
+            await checkSqlStatus();
+          } else {
+            document.getElementById("errorMessage").textContent =
+              testResult.error || "Credenciales invalidas";
+            showStep("stepError");
+          }
+        } catch (error) {
+          document.getElementById("errorMessage").textContent = error.message;
+          showStep("stepError");
+        }
+      }
+
+      // ============================================
+      // Event Listeners
+      // ============================================
+
+      btnConfigureSql.addEventListener("click", openOnboarding);
+
+      document
+        .getElementById("btnCancelOnboarding")
+        .addEventListener("click", closeOnboarding);
+      document
+        .getElementById("btnTestCredentials")
+        .addEventListener("click", testAndSaveCredentials);
+      document
+        .getElementById("btnCloseSuccess")
+        .addEventListener("click", closeOnboarding);
+      document
+        .getElementById("btnCloseError")
+        .addEventListener("click", closeOnboarding);
+      document
+        .getElementById("btnRetry")
+        .addEventListener("click", () => showStep("step1"));
+
+      // VPN button - replace host with VPN IP keeping instance name
+      document.getElementById("btnUseVpn").addEventListener("click", () => {
+        if (!detectedVpnIp) return;
+        const currentHost = onbHost.value;
+        // Extract instance name if present (e.g., "192.168.1.1\SQLEXPRESS" -> "SQLEXPRESS")
+        const instanceMatch = currentHost.match(/\\([^,]+)/);
+        const portMatch = currentHost.match(/,(\d+)$/);
+
+        let newHost = detectedVpnIp;
+        if (instanceMatch) {
+          newHost += "\\" + instanceMatch[1];
+        }
+        if (portMatch) {
+          newHost += "," + portMatch[1];
+        }
+
+        onbHost.value = newHost;
+        document.getElementById("vpnOption").classList.add("hidden");
+      });
+
+      // ============================================
+      // Original Functions
+      // ============================================
+
+      function loadConfig(config) {
+        if (config) {
+          if (config.xquisito) {
+            branchIdInput.value = config.xquisito.branchId || "";
+            syncTokenInput.value = config.xquisito.syncToken || "";
+          }
+          if (config.sqlServer) {
+            sqlHostInput.value = config.sqlServer.host || "";
+            sqlDatabaseInput.value = config.sqlServer.database || "";
+          }
+        }
+      }
+
+      window.xquisito.onLoadConfig(loadConfig);
+
+      window.xquisito.onAgentStatus((status) => {
+        updateStatus(status.connected);
+      });
+
+      function updateStatus(connected) {
+        statusBar.className =
+          "status-bar " + (connected ? "connected" : "disconnected");
+        statusText.textContent = connected ? "Conectado" : "Desconectado";
+      }
+
+      function showMessage(text, type) {
+        message.textContent = text;
+        message.className = "message " + type;
+        setTimeout(() => {
+          message.className = "message";
+        }, 4000);
+      }
+
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const configData = {
+          branchId: branchIdInput.value.trim(),
+          syncToken: syncTokenInput.value.trim(),
+          sqlHost: sqlHostInput.value.trim(),
+          sqlDatabase: sqlDatabaseInput.value.trim(),
+        };
+
+        if (!configData.branchId || !configData.syncToken) {
+          showMessage("Branch ID y Sync Token son requeridos", "error");
+          return;
+        }
+
+        if (!sqlConfigured) {
+          showMessage("Configura SQL Server primero", "error");
+          openOnboarding();
+          return;
+        }
+
+        const result = await window.xquisito.saveFullConfig(configData);
+        if (result.success) {
+          showMessage("Guardado. Reconectando...", "success");
         } else {
-          document.getElementById('errorMessage').textContent = testResult.error || 'Credenciales invalidas';
-          showStep('stepError');
+          showMessage("Error: " + result.error, "error");
         }
-      } catch (error) {
-        document.getElementById('errorMessage').textContent = error.message;
-        showStep('stepError');
-      }
-    }
+      });
 
-    // ============================================
-    // Event Listeners
-    // ============================================
+      // ============================================
+      // Initialize
+      // ============================================
 
-    btnConfigureSql.addEventListener('click', openOnboarding);
-
-    document.getElementById('btnCancelOnboarding').addEventListener('click', closeOnboarding);
-    document.getElementById('btnTestCredentials').addEventListener('click', testAndSaveCredentials);
-    document.getElementById('btnCloseSuccess').addEventListener('click', closeOnboarding);
-    document.getElementById('btnCloseError').addEventListener('click', closeOnboarding);
-    document.getElementById('btnRetry').addEventListener('click', () => showStep('step1'));
-
-    // ============================================
-    // Original Functions
-    // ============================================
-
-    function loadConfig(config) {
-      if (config) {
-        if (config.xquisito) {
-          branchIdInput.value = config.xquisito.branchId || '';
-          syncTokenInput.value = config.xquisito.syncToken || '';
-        }
-        if (config.sqlServer) {
-          sqlHostInput.value = config.sqlServer.host || '';
-          sqlDatabaseInput.value = config.sqlServer.database || '';
-        }
-      }
-    }
-
-    window.xquisito.onLoadConfig(loadConfig);
-
-    window.xquisito.onAgentStatus((status) => {
-      updateStatus(status.connected);
-    });
-
-    function updateStatus(connected) {
-      statusBar.className = 'status-bar ' + (connected ? 'connected' : 'disconnected');
-      statusText.textContent = connected ? 'Conectado' : 'Desconectado';
-    }
-
-    function showMessage(text, type) {
-      message.textContent = text;
-      message.className = 'message ' + type;
-      setTimeout(() => { message.className = 'message'; }, 4000);
-    }
-
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-
-      const configData = {
-        branchId: branchIdInput.value.trim(),
-        syncToken: syncTokenInput.value.trim(),
-        sqlHost: sqlHostInput.value.trim(),
-        sqlDatabase: sqlDatabaseInput.value.trim()
-      };
-
-      if (!configData.branchId || !configData.syncToken) {
-        showMessage('Branch ID y Sync Token son requeridos', 'error');
-        return;
-      }
-
-      if (!sqlConfigured) {
-        showMessage('Configura SQL Server primero', 'error');
-        openOnboarding();
-        return;
-      }
-
-      const result = await window.xquisito.saveFullConfig(configData);
-      if (result.success) {
-        showMessage('Guardado. Reconectando...', 'success');
-      } else {
-        showMessage('Error: ' + result.error, 'error');
-      }
-    });
-
-    // ============================================
-    // Initialize
-    // ============================================
-
-    window.xquisito.getStatus().then(s => updateStatus(s.connected));
-    window.xquisito.getConfig().then(loadConfig);
-    checkSqlStatus();
-  </script>
-</body>
+      window.xquisito.getStatus().then((s) => updateStatus(s.connected));
+      window.xquisito.getConfig().then(loadConfig);
+      checkSqlStatus();
+    </script>
+  </body>
 </html>

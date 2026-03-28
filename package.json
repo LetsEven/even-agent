@@ -5,8 +5,7 @@
   "main": "src/main.js",
   "scripts": {
     "start": "electron .",
-    "build": "electron-builder --win",
-    "agent": "node src/agent.js"
+    "build": "electron-builder --win"
   },
   "author": "Xquisito",
   "license": "UNLICENSED",
