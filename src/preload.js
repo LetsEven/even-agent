@@ -16,6 +16,7 @@ contextBridge.exposeInMainWorld('xquisito', {
   getStatus: () => ipcRenderer.invoke('get-status'),
   startAgent: () => ipcRenderer.invoke('start-agent'),
   stopAgent: () => ipcRenderer.invoke('stop-agent'),
+  refreshTurno: () => ipcRenderer.invoke('refresh-turno'),
 
   // Ventana
   minimize: () => ipcRenderer.invoke('minimize-window'),

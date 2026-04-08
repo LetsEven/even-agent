@@ -66,28 +66,9 @@
           </button>
         </div>
 
-        <!-- Manual SQL Config (hidden by default, shown when SQL is configured) -->
-        <div id="sqlManualConfig" class="hidden">
-          <div class="form-group">
-            <label>Servidor</label>
-            <input
-              type="text"
-              id="sqlHost"
-              placeholder="localhost\SQLEXPRESS"
-              value="localhost\SQLEXPRESS"
-            />
-          </div>
-
-          <div class="form-group">
-            <label>Base de datos</label>
-            <input
-              type="text"
-              id="sqlDatabase"
-              placeholder="softrestaurant10"
-              value="softrestaurant10"
-            />
-          </div>
-        </div>
+        <!-- Hidden inputs for SQL config (used internally) -->
+        <input type="hidden" id="sqlHost" value="localhost\SQLEXPRESS" />
+        <input type="hidden" id="sqlDatabase" value="softrestaurant10" />
 
         <div class="buttons">
           <button type="submit" class="btn btn-primary">
@@ -279,7 +260,6 @@
       const sqlStatusTitle = document.getElementById("sqlStatusTitle");
       const sqlStatusDesc = document.getElementById("sqlStatusDesc");
       const btnConfigureSql = document.getElementById("btnConfigureSql");
-      const sqlManualConfig = document.getElementById("sqlManualConfig");
 
       // Onboarding elements
       const onboardingModal = document.getElementById("onboardingModal");
@@ -316,23 +296,20 @@
           sqlStatusIcon.className = "sql-status-icon configured";
           sqlStatusIcon.textContent = "✓";
           sqlStatusTitle.textContent = "SQL Configurado";
-          sqlStatusDesc.textContent = `${sqlCredentials.host} - Usuario: ${sqlCredentials.user}`;
+          sqlStatusDesc.textContent = `${sqlCredentials.host} - ${sqlCredentials.database}`;
           btnConfigureSql.textContent = "Reconfigurar";
           btnConfigureSql.className = "btn btn-secondary btn-small";
 
-          // Update manual config fields
+          // Update hidden config fields
           sqlHostInput.value = sqlCredentials.host || "";
           sqlDatabaseInput.value = sqlCredentials.database || "";
-          sqlManualConfig.classList.remove("hidden");
         } else {
           sqlStatusIcon.className = "sql-status-icon not-configured";
           sqlStatusIcon.textContent = "?";
           sqlStatusTitle.textContent = "No configurado";
-          sqlStatusDesc.textContent =
-            "Haz clic para configurar automaticamente";
+          sqlStatusDesc.textContent = "Haz clic para configurar";
           btnConfigureSql.textContent = "Configurar";
           btnConfigureSql.className = "btn btn-primary btn-small";
-          sqlManualConfig.classList.add("hidden");
         }
       }
 

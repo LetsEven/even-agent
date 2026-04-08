@@ -59,10 +59,15 @@ function sendLogToRenderer(type, args) {
     )
     .join(" ");
   if (mainWindow && mainWindow.webContents) {
+    // Escapar caracteres problemáticos para JS string
+    const escaped = msg
+      .replace(/\\/g, "\\\\")
+      .replace(/'/g, "\\'")
+      .replace(/\n/g, "\\n")
+      .replace(/\r/g, "\\r")
+      .replace(/\t/g, "\\t");
     mainWindow.webContents
-      .executeJavaScript(
-        `console.${type}('[AGENT] ${msg.replace(/'/g, "\\'")}');`,
-      )
+      .executeJavaScript(`console.${type}('[AGENT] ${escaped}');`)
       .catch(() => {});
   }
 }
@@ -117,6 +122,7 @@ function saveConfig(branchId, syncToken) {
       branchId: branchId,
       syncToken: syncToken,
       wsUrl: "https://xquisito-backend-production.up.railway.app/sync",
+      // wsUrl: "http://localhost:5000/sync",
     },
   };
   fs.writeFileSync(getConfigPath(), JSON.stringify(config, null, 2), "utf8");
@@ -139,14 +145,10 @@ function setupOrderHandlers() {
   // Nueva orden
   syncSocket.on("new_order", async (data) => {
     console.log("[ORDER] Nueva orden:", data.requestId);
+    // DEBUG: Ver estructura completa de la orden
     console.log(
-      "[ORDER] Datos recibidos:",
-      JSON.stringify({
-        tableNumber: data.tableNumber,
-        table_number: data.table_number,
-        guests: data.guests,
-        items: data.items?.length || 0,
-      }),
+      "[ORDER] Datos COMPLETOS del backend:",
+      JSON.stringify(data, null, 2),
     );
     try {
       const orderData = transformOrder(data);
@@ -181,13 +183,16 @@ function setupOrderHandlers() {
 
   // Aplicar pago
   syncSocket.on("apply_payment", async (data) => {
-    console.log(`[PAYMENT] Folio ${data.folio}, $${data.amount}`);
+    console.log(
+      `[PAYMENT] Folio ${data.folio}, $${data.amount}, propina: $${data.tip || 0}`,
+    );
     try {
       const result = await applyPayment(
         data.folio,
         data.amount,
         data.tenderId,
         data.reference,
+        data.tip || 0,
       );
       console.log(`[PAYMENT] ${result.status}`);
       syncSocket.emit("apply_payment_ack", {
@@ -542,6 +547,33 @@ ipcMain.handle("save-config", async (event, { branchId, syncToken }) => {
   }
 });
 
+ipcMain.handle("save-full-config", async (event, configData) => {
+  try {
+    const config = {
+      sqlServer: {
+        host: configData.sqlHost || "localhost",
+        user: configData.sqlUser || "sa",
+        password: configData.sqlPassword || "",
+        database: configData.sqlDatabase || "softrestaurant10",
+        port: parseInt(configData.sqlPort) || 1433,
+      },
+      xquisito: {
+        branchId: configData.branchId,
+        syncToken: configData.syncToken,
+        wsUrl:
+          configData.wsUrl ||
+          "https://xquisito-backend-production.up.railway.app/sync",
+        //wsUrl: configData.wsUrl || "http://localhost:5000/sync",
+      },
+    };
+    fs.writeFileSync(getConfigPath(), JSON.stringify(config, null, 2), "utf8");
+    await restartAgent();
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
 ipcMain.handle("test-sql", async () => {
   try {
     const config = getConfig();
@@ -571,6 +603,32 @@ ipcMain.handle("test-sql", async () => {
 
 ipcMain.handle("get-agent-status", () => ({ connected: isConnected }));
 ipcMain.handle("get-status", () => ({ connected: isConnected }));
+
+ipcMain.handle("refresh-turno", async () => {
+  try {
+    // Verificar que hay conexión SQL activa
+    const { getPool } = require("./database");
+    const pool = getPool();
+    if (!pool) {
+      return { success: false, error: "SQL no conectado" };
+    }
+
+    const turno = await getActiveTurno();
+    if (turno) {
+      console.log(`[TURNO] Refrescado: ${turno.idturno}`);
+      return {
+        success: true,
+        turno: { idturno: turno.idturno, apertura: turno.apertura },
+      };
+    } else {
+      console.log("[TURNO] No hay turno abierto");
+      return { success: true, turno: null };
+    }
+  } catch (error) {
+    console.error("[TURNO] Error:", error.message);
+    return { success: false, error: error.message };
+  }
+});
 
 ipcMain.handle("start-agent", async () => {
   await startAgent();

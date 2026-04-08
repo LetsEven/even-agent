@@ -49,12 +49,14 @@ async function createGroup(name, displayOrder = 0) {
   await ensureSqlConnection();
   const pool = getPool();
 
-  // Generar ID único de 5 caracteres
-  const idgrupo =
-    name
-      .substring(0, 4)
-      .toUpperCase()
-      .replace(/[^A-Z0-9]/g, "X") + Math.floor(Math.random() * 10).toString();
+  // Obtener siguiente ID numérico incremental
+  const maxResult = await pool.request().query(`
+    SELECT ISNULL(MAX(CAST(idgrupo AS INT)), 0) + 1 as nextId
+    FROM grupos
+    WHERE ISNUMERIC(idgrupo) = 1
+  `);
+  const nextId = maxResult.recordset[0].nextId;
+  const idgrupo = String(nextId); // varchar(5)
 
   await pool
     .request()
@@ -62,10 +64,11 @@ async function createGroup(name, displayOrder = 0) {
     .input("descripcion", sql.VarChar, name.substring(0, 30))
     .input("prioridad", sql.Numeric, displayOrder)
     .input("clasificacion", sql.Numeric, 1).query(`
-      INSERT INTO grupos (idgrupo, descripcion, prioridad, clasificacion, alcohol)
-      VALUES (@idgrupo, @descripcion, @prioridad, @clasificacion, 0)
+      INSERT INTO grupos (idgrupo, descripcion, prioridad, clasificacion, id_etiqueta, alcohol)
+      VALUES (@idgrupo, @descripcion, @prioridad, @clasificacion, '', 0)
     `);
 
+  console.log(`[SYNC] Grupo creado con ID numérico: ${idgrupo}`);
   return { idgrupo, descripcion: name };
 }
 
@@ -74,9 +77,24 @@ async function createProduct(data) {
   await ensureSqlConnection();
   const pool = getPool();
 
-  // Generar ID de producto (15 chars max)
-  const timestamp = Date.now().toString().slice(-8);
-  const idproducto = `XQ${timestamp}`;
+  // Obtener siguiente ID numérico incremental para producto
+  const maxResult = await pool.request().query(`
+    SELECT ISNULL(MAX(CAST(idproducto AS INT)), 0) + 1 as nextId
+    FROM productos
+    WHERE ISNUMERIC(idproducto) = 1
+  `);
+  const nextId = maxResult.recordset[0].nextId;
+  const idproducto = String(nextId); // varchar(15)
+
+  // Obtener idempresa válido de la tabla empresas
+  const empresaResult = await pool.request().query(`
+    SELECT TOP 1 idempresa FROM empresas ORDER BY idempresa
+  `);
+  if (!empresaResult.recordset.length) {
+    throw new Error("No hay empresas registradas en el sistema");
+  }
+  const idempresa = empresaResult.recordset[0].idempresa;
+
   const precioSinImp = data.price / 1.16; // Asumir 16% IVA
 
   // Insertar en productos
@@ -108,27 +126,31 @@ async function createProduct(data) {
       )
     `);
 
-  // Insertar en productosdetalle (precios)
+  // Insertar en productosdetalle (precios) con todos los campos NOT NULL
   await pool
     .request()
     .input("idproducto", sql.VarChar, idproducto)
-    .input("idempresa", sql.VarChar, "1")
+    .input("idempresa", sql.VarChar, idempresa)
     .input("precio", sql.Money, data.price)
     .input("preciosinimpuestos", sql.Money, precioSinImp)
-    .input("impuesto1", sql.Numeric, 16)
-    .input("bloqueado", sql.Bit, 0).query(`
+    .input("impuesto1", sql.Numeric, 16).query(`
       INSERT INTO productosdetalle (
         idproducto, idempresa, precio, preciosinimpuestos,
         impuesto1, impuesto2, impuesto3, bloqueado,
-        precioabierto, canjeablepuntos
+        precioabierto, canjeablepuntos, idunidad,
+        ocultarmitades, dev_impuestoimporte3, impuestoimporte3,
+        usa_imagen_monitor, comisionprecio, usa_bascula
       )
       VALUES (
         @idproducto, @idempresa, @precio, @preciosinimpuestos,
-        @impuesto1, 0, 0, @bloqueado,
-        0, 0
+        @impuesto1, 0, 0, 0,
+        0, 0, 'PZA',
+        0, 0, 0,
+        0, 0, 0
       )
     `);
 
+  console.log(`[SYNC] Producto creado con ID numérico: ${idproducto}, empresa: ${idempresa}`);
   return { idproducto, descripcion: data.name, precio: data.price };
 }
 
