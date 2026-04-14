@@ -10,7 +10,25 @@ const {
   Menu,
   ipcMain,
   nativeImage,
+  Notification,
 } = require("electron");
+
+app.setName("Xquisito");
+app.setAppUserModelId("com.xquisito.agent");
+
+// Registrar AUMID en Windows para que las notificaciones muestren "Xquisito"
+const { execSync } = require("child_process");
+try {
+  execSync(
+    `powershell -Command "` +
+      `New-Item -Path 'HKCU:\\SOFTWARE\\Classes\\AppUserModelId\\com.xquisito.agent' -Force | Out-Null;` +
+      `New-ItemProperty -Path 'HKCU:\\SOFTWARE\\Classes\\AppUserModelId\\com.xquisito.agent' -Name 'DisplayName' -Value 'Xquisito' -Force | Out-Null` +
+      `"`,
+    { windowsHide: true },
+  );
+} catch (e) {
+  // No crítico, continúa sin el registro
+}
 
 // Quitar menú de la ventana
 Menu.setApplicationMenu(null);
@@ -32,6 +50,8 @@ const {
   transformOrder,
 } = require("./orders");
 const { setupSyncHandlers } = require("./sync");
+const { discoverPrinters, setupPrinterHandlers, setupPrinterTestHandler } = require("./printers");
+const { setPrinters, printOrderTickets } = require("./printing");
 const sqlOnboarding = require("./sqlOnboarding");
 
 let mainWindow = null;
@@ -121,8 +141,8 @@ function saveConfig(branchId, syncToken) {
     xquisito: {
       branchId: branchId,
       syncToken: syncToken,
-      wsUrl: "https://xquisito-backend-production.up.railway.app/sync",
-      // wsUrl: "http://localhost:5000/sync",
+      //wsUrl: "https://xquisito-backend-production.up.railway.app/sync",
+      wsUrl: "http://localhost:5000/sync",
     },
   };
   fs.writeFileSync(getConfigPath(), JSON.stringify(config, null, 2), "utf8");
@@ -139,6 +159,25 @@ function updateStatus(connected) {
   if (mainWindow) {
     mainWindow.webContents.send("agent-status", { connected });
   }
+}
+
+function showLocalNotification(title, body) {
+  if (Notification.isSupported()) {
+    const isDev = !app.isPackaged;
+    const icon = isDev
+      ? path.join(__dirname, "..", "assets", "icon-white.ico")
+      : path.join(
+          process.resourcesPath,
+          "app.asar",
+          "assets",
+          "icon-white.ico",
+        );
+    new Notification({ title, body, icon }).show();
+  }
+}
+
+function sendNotification(title, body) {
+  showLocalNotification(title, body);
 }
 
 function setupOrderHandlers() {
@@ -158,6 +197,22 @@ function setupOrderHandlers() {
       if (result.descuento > 0) {
         console.log(`[ORDER] Descuento: $${result.descuento.toFixed(2)}`);
       }
+      const details = result.itemDetails || [];
+      const lines = details.map(
+        (i) =>
+          `${i.nombre}${i.cantidad > 1 ? ` x${i.cantidad}` : ""} — $${i.total.toFixed(2)}`,
+      );
+      lines.push(`Total: $${result.total.toFixed(2)}`);
+      sendNotification(
+        `Nueva orden - Mesa ${orderData.mesa}`,
+        lines.join("\n"),
+      );
+
+      // Imprimir tickets (fire and forget — no bloquea el ACK)
+      printOrderTickets(orderData, data, result.folio, result.idmesero).catch(err =>
+        console.error("[PRINT] Error en impresión:", err.message)
+      );
+
       syncSocket.emit("order_ack", {
         requestId: data.requestId,
         orderId: data.id,
@@ -226,6 +281,10 @@ function setupOrderHandlers() {
 
       const result = await addItemsToOrder(data.folio, items);
       console.log(`[ADD_ITEMS] ${result.itemsAdded} items agregados`);
+      sendNotification(
+        `Productos agregados - Folio ${data.folio}`,
+        `${result.itemsAdded} producto(s) agregado(s)`,
+      );
       syncSocket.emit("add_items_ack", {
         requestId: data.requestId,
         success: true,
@@ -338,6 +397,11 @@ async function startAgent() {
       console.log("[WS] Registrado:", data.message || "OK");
     });
 
+    syncSocket.on("printers_config", (data) => {
+      console.log(`[PRINT] Configuración recibida: ${data.printers?.length || 0} impresora(s)`);
+      setPrinters(data.printers || []);
+    });
+
     syncSocket.on("register_error", (data) => {
       console.error("[WS] Error registro:", data.error);
       updateStatus(false);
@@ -379,6 +443,8 @@ async function startAgent() {
     // Setup handlers
     setupOrderHandlers();
     setupSyncHandlers(syncSocket);
+    setupPrinterHandlers(syncSocket);
+    setupPrinterTestHandler(syncSocket);
   } catch (error) {
     console.error("[AGENT] Error:", error.message);
     updateStatus(false);
@@ -560,10 +626,10 @@ ipcMain.handle("save-full-config", async (event, configData) => {
       xquisito: {
         branchId: configData.branchId,
         syncToken: configData.syncToken,
-        wsUrl:
-          configData.wsUrl ||
-          "https://xquisito-backend-production.up.railway.app/sync",
-        //wsUrl: configData.wsUrl || "http://localhost:5000/sync",
+        //wsUrl:
+        //configData.wsUrl ||
+        //  "https://xquisito-backend-production.up.railway.app/sync",
+        wsUrl: configData.wsUrl || "http://localhost:5000/sync",
       },
     };
     fs.writeFileSync(getConfigPath(), JSON.stringify(config, null, 2), "utf8");
@@ -595,6 +661,28 @@ ipcMain.handle("test-sql", async () => {
 
     const testPool = await sql.connect(testConfig);
     await testPool.close();
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle("scan-printers", async () => {
+  try {
+    return await discoverPrinters();
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle("report-printers", async (event, printers) => {
+  try {
+    if (syncSocket && syncSocket.connected) {
+      syncSocket.emit("printers_report", {
+        branchId: currentConfig?.xquisito?.branchId,
+        printers,
+      });
+    }
     return { success: true };
   } catch (error) {
     return { success: false, error: error.message };
@@ -725,7 +813,6 @@ app.on("ready", () => {
   createWindow();
   createTray();
   showWindow();
-
   // Siempre registrar para iniciar con Windows
   if (app.isPackaged) {
     app.setLoginItemSettings({

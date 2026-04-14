@@ -78,6 +78,14 @@
       </form>
 
       <div id="message" class="message"></div>
+
+      <!-- Impresoras -->
+      <div class="section-title" style="margin-top: 16px">Impresoras WiFi</div>
+      <button id="btnScanPrinters" type="button" class="btn btn-secondary" style="margin-bottom: 8px">
+        Escanear red
+      </button>
+      <div id="printersScanMsg" class="message"></div>
+      <div id="printersList" class="printers-list hidden"></div>
     </div>
 
     <!-- SQL Onboarding Modal -->
@@ -524,6 +532,56 @@
           showMessage("Guardado. Reconectando...", "success");
         } else {
           showMessage("Error: " + result.error, "error");
+        }
+      });
+
+      // ============================================
+      // Impresoras
+      // ============================================
+
+      const btnScanPrinters = document.getElementById("btnScanPrinters");
+      const printersList = document.getElementById("printersList");
+      const printersScanMsg = document.getElementById("printersScanMsg");
+
+      function showScanMsg(text, type) {
+        printersScanMsg.textContent = text;
+        printersScanMsg.className = "message " + type;
+        if (type !== "info") {
+          setTimeout(() => { printersScanMsg.className = "message"; }, 4000);
+        }
+      }
+
+      btnScanPrinters.addEventListener("click", async () => {
+        btnScanPrinters.disabled = true;
+        btnScanPrinters.textContent = "Escaneando...";
+        printersList.classList.add("hidden");
+        showScanMsg("Escaneando red local, espera...", "info");
+
+        try {
+          const result = await window.xquisito.scanPrinters();
+          const { printers = [], subnet } = result;
+
+          showScanMsg(
+            printers.length > 0
+              ? `${printers.length} impresora(s) encontrada(s) en ${subnet}.0/24`
+              : `Sin impresoras en ${subnet}.0/24`,
+            printers.length > 0 ? "success" : "error"
+          );
+
+          if (printers.length > 0) {
+            printersList.innerHTML = printers
+              .map(p => `<div class="printer-item"><span class="printer-ip">${p.ip}</span><span class="printer-port">:${p.port}</span></div>`)
+              .join("");
+            printersList.classList.remove("hidden");
+
+            // Reportar al backend para guardar
+            await window.xquisito.reportPrinters(printers);
+          }
+        } catch (err) {
+          showScanMsg("Error: " + err.message, "error");
+        } finally {
+          btnScanPrinters.disabled = false;
+          btnScanPrinters.textContent = "Escanear red";
         }
       });
 

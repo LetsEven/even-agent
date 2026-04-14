@@ -407,3 +407,32 @@ body {
 .hidden {
   display: none !important;
 }
+
+/* Printers */
+.printers-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.printer-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  background: #16213e;
+  border-radius: 6px;
+  border: 1px solid #2a2a4a;
+}
+
+.printer-ip {
+  font-size: 12px;
+  color: #fff;
+  font-family: monospace;
+}
+
+.printer-port {
+  font-size: 11px;
+  color: #667eea;
+}

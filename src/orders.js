@@ -286,6 +286,24 @@ async function insertOrder(orderData) {
     );
   }
 
+  // Obtener nombres de productos para la notificación
+  const ids = itemsConPromo
+    .map((i) => `'${i.idproducto.replace(/'/g, "''")}'`)
+    .join(",");
+  const nombresResult = await pool
+    .request()
+    .query(`SELECT idproducto, descripcion FROM productos WHERE idproducto IN (${ids})`);
+  const nombreMap = {};
+  for (const r of nombresResult.recordset) {
+    nombreMap[r.idproducto] = r.descripcion;
+  }
+  const itemDetails = itemsConPromo.map((i) => {
+    const nombre = nombreMap[i.idproducto] || i.idproducto;
+    const extraPrice = i.extraPrice || 0;
+    const precioFinal = (i.precioFinal + extraPrice) * i.cantidad;
+    return { nombre, cantidad: i.cantidad, total: precioFinal };
+  });
+
   return {
     folio,
     total: totalConDescuento,
@@ -294,6 +312,8 @@ async function insertOrder(orderData) {
     descuento: descuentoTotal,
     totalSinDescuento,
     itemsCount: orderData.items.length,
+    itemDetails,
+    idmesero,
   };
 }
 

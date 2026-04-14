@@ -36,6 +36,10 @@ contextBridge.exposeInMainWorld('xquisito', {
     getDiagnostics: () => ipcRenderer.invoke('sql-onboarding-diagnostics')
   },
 
+  // Impresoras
+  scanPrinters: () => ipcRenderer.invoke('scan-printers'),
+  reportPrinters: (printers) => ipcRenderer.invoke('report-printers', printers),
+
   // Eventos
   onLoadConfig: (callback) => ipcRenderer.on('load-config', (event, config) => callback(config)),
   onAgentStatus: (callback) => ipcRenderer.on('agent-status', (event, status) => callback(status))
