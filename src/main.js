@@ -50,8 +50,17 @@ const {
   transformOrder,
 } = require("./orders");
 const { setupSyncHandlers } = require("./sync");
-const { discoverPrinters, setupPrinterHandlers, setupPrinterTestHandler } = require("./printers");
-const { setPrinters, printOrderTickets } = require("./printing");
+const {
+  discoverPrinters,
+  setupPrinterHandlers,
+  setupPrinterTestHandler,
+  setupUsbPrinterHandlers,
+} = require("./printers");
+const {
+  setPrinters,
+  printOrderTickets,
+  printJobFromBackend,
+} = require("./printing");
 const sqlOnboarding = require("./sqlOnboarding");
 
 let mainWindow = null;
@@ -141,8 +150,8 @@ function saveConfig(branchId, syncToken) {
     xquisito: {
       branchId: branchId,
       syncToken: syncToken,
-      //wsUrl: "https://xquisito-backend-production.up.railway.app/sync",
-      wsUrl: "http://localhost:5000/sync",
+      wsUrl: "https://xquisito-backend-production.up.railway.app/sync",
+      //wsUrl: "http://localhost:5000/sync",
     },
   };
   fs.writeFileSync(getConfigPath(), JSON.stringify(config, null, 2), "utf8");
@@ -193,7 +202,12 @@ function setupOrderHandlers() {
       const orderData = transformOrder(data);
       console.log("[ORDER] Mesa transformada:", orderData.mesa);
       const result = await insertOrder(orderData);
-      console.log(`[ORDER] Folio: ${result.folio}`);
+      console.log(`[ORDER] Resultado insertOrder:`, JSON.stringify({
+        folio: result.folio,
+        numcheque: result.numcheque,
+        duplicate: result.duplicate ?? false,
+        total: result.total,
+      }));
       if (result.descuento > 0) {
         console.log(`[ORDER] Descuento: $${result.descuento.toFixed(2)}`);
       }
@@ -208,15 +222,13 @@ function setupOrderHandlers() {
         lines.join("\n"),
       );
 
-      // Imprimir tickets (fire and forget — no bloquea el ACK)
-      printOrderTickets(orderData, data, result.folio, result.idmesero).catch(err =>
-        console.error("[PRINT] Error en impresión:", err.message)
-      );
+      // La impresión se maneja vía print_job desde el backend (unificado con crew)
 
       syncSocket.emit("order_ack", {
         requestId: data.requestId,
         orderId: data.id,
         folio: result.folio,
+        numcheque: result.numcheque,
         success: true,
         totals: {
           subtotal: result.subtotal,
@@ -386,25 +398,34 @@ async function startAgent() {
       }
     }
 
-    syncSocket.on("connect", () => {
-      console.log("[WS] Conectado!");
-      updateStatus(true);
-      registerWithServer();
-      startHeartbeat();
-    });
-
     syncSocket.on("register_ack", (data) => {
       console.log("[WS] Registrado:", data.message || "OK");
     });
 
     syncSocket.on("printers_config", (data) => {
-      console.log(`[PRINT] Configuración recibida: ${data.printers?.length || 0} impresora(s)`);
+      console.log(
+        `[PRINT] Configuración recibida: ${data.printers?.length || 0} impresora(s)`,
+      );
       setPrinters(data.printers || []);
+    });
+
+    // Trabajo de impresión desde backend (FlexBill, Tap, Room, Pick&Go)
+    syncSocket.on("print_job", (data) => {
+      printJobFromBackend(data).catch((err) =>
+        console.error("[PRINT] Error en print_job:", err.message),
+      );
     });
 
     syncSocket.on("register_error", (data) => {
       console.error("[WS] Error registro:", data.error);
       updateStatus(false);
+    });
+
+    syncSocket.on("connect", () => {
+      console.log("[WS] Conectado!");
+      updateStatus(true);
+      registerWithServer();
+      startHeartbeat();
     });
 
     syncSocket.on("pong", () => {});
@@ -445,6 +466,7 @@ async function startAgent() {
     setupSyncHandlers(syncSocket);
     setupPrinterHandlers(syncSocket);
     setupPrinterTestHandler(syncSocket);
+    setupUsbPrinterHandlers(syncSocket);
   } catch (error) {
     console.error("[AGENT] Error:", error.message);
     updateStatus(false);
@@ -626,10 +648,10 @@ ipcMain.handle("save-full-config", async (event, configData) => {
       xquisito: {
         branchId: configData.branchId,
         syncToken: configData.syncToken,
-        //wsUrl:
-        //configData.wsUrl ||
-        //  "https://xquisito-backend-production.up.railway.app/sync",
-        wsUrl: configData.wsUrl || "http://localhost:5000/sync",
+        wsUrl:
+          configData.wsUrl ||
+          "https://xquisito-backend-production.up.railway.app/sync",
+        //wsUrl: configData.wsUrl || "http://localhost:5000/sync",
       },
     };
     fs.writeFileSync(getConfigPath(), JSON.stringify(config, null, 2), "utf8");

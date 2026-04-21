@@ -1,5 +1,6 @@
 const net = require("net");
 const { getPool } = require("./database");
+const { printRawUsb } = require("./usbPrinters");
 
 const PRINTER_PORT = 9100;
 const PRINT_TIMEOUT_MS = 5000;
@@ -30,9 +31,10 @@ async function getClasificacionFromSR(items) {
     // Obtener idgrupo de cada producto
     const ids = items.map((i) => `'${i.idproducto}'`).join(",");
     const result = await pool.request().query(`
-      SELECT p.idproducto, g.clasificacion
+      SELECT p.idproducto, ISNULL(gc.clasificacionventa, g.clasificacion) AS clasificacion
       FROM productos p
       INNER JOIN grupos g ON p.idgrupo = g.idgrupo
+      LEFT JOIN gruposiclasificacion gc ON g.clasificacion = gc.idgruposiclasificacion
       WHERE p.idproducto IN (${ids})
     `);
 
@@ -77,6 +79,9 @@ function init() {
 function alignLeft() {
   return Buffer.from([ESC, 0x61, 0x00]);
 }
+function alignCenter() {
+  return Buffer.from([ESC, 0x61, 0x01]);
+}
 function doubleSize() {
   return Buffer.from([ESC, 0x21, 0x30]);
 } // doble ancho+alto
@@ -116,6 +121,9 @@ function buildTicket({
   mesero,
   items,
   notas,
+  folio,
+  identifier,
+  orderedBy = null,
 }) {
   const roleLabel = ROLE_LABEL[role] || "GENERAL";
   const areaLabel = AREA_LABEL[idarearestaurant] || "COMEDOR";
@@ -136,36 +144,60 @@ function buildTicket({
 
   const buf = [];
 
-  // 1. Init + alinear izquierda
+  // 1. Init + centrar
   buf.push(init());
-  buf.push(alignLeft());
+  buf.push(alignCenter());
 
-  // 2. Header: doble ancho+alto  →  \n== CUENTA NUEVA ==\n
+  // 2. Header centrado: doble ancho+alto
   buf.push(doubleSize());
   buf.push(ascii(`\n== CUENTA NUEVA ==\n`));
 
-  // 3. Resto en doble ancho solo
+  // 2b. Folio centrado, siempre presente
+  buf.push(ascii(`== ${String(folio).padStart(5, "0")} ==\n`));
+
+  // 2c. Nombre del comensal (si existe), mismo tamaño centrado
+  if (orderedBy) {
+    buf.push(ascii(`${orderedBy.toUpperCase()}\n`));
+  }
+
+  // 3. Resto alineado izquierda, doble ancho solo
+  buf.push(alignLeft());
   buf.push(doubleWidth());
 
   // 4. Línea destino + orden
-  buf.push(ascii(`\n${roleLabel}(${areaLabel}) ORDEN: ${orden}\n`));
+  const ordenLabel = String(folio).padStart(5, "0");
+  buf.push(ascii(`\n${roleLabel}(${areaLabel}) ORDEN: ${ordenLabel}\n`));
 
   // 5. Fecha
   buf.push(ascii(`${fecha}\n`));
 
-  // 6. Mesa, personas, mesero (mesero vacío si no viene del POS)
-  const meseroLabel = mesero ? `MESERO: ${mesero}` : "MESERO: XQUISITO";
-  buf.push(
-    ascii(
-      `MESA: ${String(mesa).padStart(2, "0")} - PERSONAS:${nopersonas} ${meseroLabel}\n`.trimEnd() +
-        "\n",
-    ),
-  );
+  // 6. Mesa / Habitación / Pick & Go
+  if (identifier) {
+    const num = identifier.match(/\d+/)?.[0];
+    if (/habitaci/i.test(identifier) || /cuarto/i.test(identifier)) {
+      buf.push(ascii(`HABITACION: ${num || identifier} MESERO: XQUISITO\n\n`));
+    } else if (/pick/i.test(identifier)) {
+      buf.push(ascii(`MESERO: XQUISITO\n\n`));
+    } else {
+      // Mesa
+      const mesaLabel = num ? String(num).padStart(2, "0") : identifier;
+      buf.push(ascii(`MESA: ${mesaLabel} MESERO: XQUISITO\n\n`));
+    }
+  } else {
+    // Formato SR POS: "MESA: 05 - PERSONAS:3 MESERO: JUAN"
+    const meseroLabel = mesero ? `MESERO: ${mesero}` : "MESERO: XQUISITO";
+    buf.push(
+      ascii(
+        `MESA: ${String(mesa).padStart(2, "0")} - PERSONAS:${nopersonas} ${meseroLabel}\n`.trimEnd() +
+          "\n",
+      ),
+    );
+  }
 
   // 7. Separador + items
   buf.push(ascii(`${SEPARATOR}\n`));
   for (const item of items) {
-    const qty = Number(item.cantidad).toFixed(3);
+    const qty = Math.round(Number(item.cantidad));
     const nombre = (
       item.nombre ||
       item.name ||
@@ -277,30 +309,119 @@ async function printOrderTickets(orderData, rawOrder, folio) {
       mesa: orderData.mesa,
       idarearestaurant: orderData.idarearestaurant || "01",
       orden: folio,
+      folio,
       nopersonas: orderData.nopersonas || 1,
       mesero: orderData.idmesero || "",
       items,
       notas: rawOrder.notes || "",
     });
 
-    jobs.push(
-      sendToPrinter(printer.ip, printer.port || PRINTER_PORT, ticketBuf)
-        .then(() =>
-          console.log(`[PRINT] ✅ Ticket enviado a ${printer.ip} (${role})`),
-        )
-        .catch((err) =>
-          console.error(
-            `[PRINT] ❌ Error enviando a ${printer.ip}: ${err.message}`,
-          ),
-        ),
-    );
+    if (printer.connection_type === "usb" && printer.usb_device_name) {
+      jobs.push(
+        printRawUsb(printer.usb_device_name, ticketBuf)
+          .then(() => console.log(`[PRINT] ✅ Ticket USB enviado a ${printer.usb_device_name} (${role})`))
+          .catch((err) => console.error(`[PRINT] ❌ Error USB ${printer.usb_device_name}: ${err.message}`)),
+      );
+    } else {
+      jobs.push(
+        sendToPrinter(printer.ip, printer.port || PRINTER_PORT, ticketBuf)
+          .then(() => console.log(`[PRINT] ✅ Ticket enviado a ${printer.ip} (${role})`))
+          .catch((err) => console.error(`[PRINT] ❌ Error enviando a ${printer.ip}: ${err.message}`)),
+      );
+    }
   }
 
   await Promise.allSettled(jobs);
+}
+
+// ============================================================
+// Print job desde backend (FlexBill, Tap, Room, Pick&Go)
+// Items ya vienen enriquecidos con clasificacion
+// ============================================================
+
+async function printJobFromBackend({ items, orderInfo }) {
+  if (activePrinters.length === 0) {
+    console.log("[PRINT] Sin impresoras configuradas, omitiendo print_job");
+    return;
+  }
+
+  const identifier = orderInfo?.identifier || "Orden";
+
+  // Agrupar items por rol destino (clasificacion ya viene del backend)
+  const byRole = new Map();
+  for (const item of items) {
+    const roles = rolsForClasificacion(item.clasificacion);
+    for (const role of roles) {
+      if (!byRole.has(role)) byRole.set(role, []);
+      byRole.get(role).push({
+        nombre: item.name,
+        cantidad: item.quantity,
+        comment: "",
+      });
+    }
+  }
+
+  const jobs = [];
+
+  for (const printer of activePrinters) {
+    const role = printer.role || "all";
+    const printerItems = byRole.get(role) || [];
+    if (printerItems.length === 0) continue;
+
+    const ticketBuf = buildTicket({
+      role,
+      identifier,
+      idarearestaurant: "01",
+      items: printerItems,
+      notas: "",
+      folio: orderInfo?.folio ?? null,
+      orderedBy: orderInfo?.orderedBy ?? null,
+    });
+
+    if (printer.connection_type === "usb" && printer.usb_device_name) {
+      jobs.push(
+        printRawUsb(printer.usb_device_name, ticketBuf)
+          .then(() => console.log(`[PRINT] ✅ print_job USB enviado a ${printer.usb_device_name} (${role})`))
+          .catch((err) => console.error(`[PRINT] ❌ Error USB ${printer.usb_device_name}: ${err.message}`)),
+      );
+    } else {
+      jobs.push(
+        sendToPrinter(printer.ip, printer.port || PRINTER_PORT, ticketBuf)
+          .then(() => console.log(`[PRINT] ✅ print_job enviado a ${printer.ip} (${role})`))
+          .catch((err) => console.error(`[PRINT] ❌ Error en ${printer.ip}: ${err.message}`)),
+      );
+    }
+  }
+
+  await Promise.allSettled(jobs);
+}
+
+function buildTestTicketUsb(printerName) {
+  const now = new Date();
+  const fecha =
+    now.toLocaleDateString("es-MX", { day: "2-digit", month: "2-digit", year: "numeric" }) +
+    " " +
+    now.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+
+  const buf = [];
+  buf.push(init(), alignCenter(), doubleSize());
+  buf.push(ascii("\n== CUENTA NUEVA ==\n"));
+  buf.push(doubleWidth());
+  buf.push(ascii(`\nXQUISITO PRINT USB\n${fecha}\n`));
+  buf.push(ascii(`${SEPARATOR}\n`));
+  buf.push(ascii(`Impresora: ${printerName}\n`));
+  buf.push(ascii(`${SEPARATOR}\n`));
+  buf.push(ascii("Asigna nombre y rol\n"));
+  buf.push(ascii("desde Impresoras.\n"));
+  buf.push(ascii(`${SEPARATOR}\n`));
+  buf.push(feedAndCut());
+  return Buffer.concat(buf);
 }
 
 module.exports = {
   setPrinters,
   getPrinters,
   printOrderTickets,
+  printJobFromBackend,
+  buildTestTicketUsb,
 };

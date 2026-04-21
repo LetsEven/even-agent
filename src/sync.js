@@ -10,11 +10,13 @@ async function getMenuData() {
   await ensureSqlConnection();
   const pool = getPool();
 
-  // Obtener grupos
+  // Obtener grupos con clasificacionventa (1=bar, 2=cocina, 3=otros)
   const groupsResult = await pool.request().query(`
-    SELECT idgrupo, descripcion, prioridad, clasificacion
-    FROM grupos
-    ORDER BY prioridad ASC, descripcion ASC
+    SELECT g.idgrupo, g.descripcion, g.prioridad,
+           ISNULL(gc.clasificacionventa, g.clasificacion) AS clasificacion
+    FROM grupos g
+    LEFT JOIN gruposiclasificacion gc ON g.clasificacion = gc.idgruposiclasificacion
+    ORDER BY g.prioridad ASC, g.descripcion ASC
   `);
 
   // Obtener productos (sin promociones)
@@ -150,7 +152,9 @@ async function createProduct(data) {
       )
     `);
 
-  console.log(`[SYNC] Producto creado con ID numérico: ${idproducto}, empresa: ${idempresa}`);
+  console.log(
+    `[SYNC] Producto creado con ID numérico: ${idproducto}, empresa: ${idempresa}`,
+  );
   return { idproducto, descripcion: data.name, precio: data.price };
 }
 

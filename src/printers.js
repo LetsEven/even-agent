@@ -1,7 +1,8 @@
-// Printers Module - Detección de impresoras via WiFi (puerto 9100)
+// Printers Module - Detección de impresoras via WiFi (puerto 9100) y USB
 
 const net = require("net");
 const os = require("os");
+const { listLocalPrinters, printRawUsb } = require("./usbPrinters");
 
 const PRINTER_PORT = 9100;
 const SCAN_TIMEOUT_MS = 500;
@@ -13,16 +14,25 @@ const SCAN_CONCURRENCY = 50;
  */
 function getLocalSubnet() {
   const interfaces = os.networkInterfaces();
+  const candidates = [];
+
   for (const name of Object.keys(interfaces)) {
     for (const iface of interfaces[name]) {
-      // Solo IPv4, no loopback
-      if (iface.family === "IPv4" && !iface.internal) {
-        const parts = iface.address.split(".");
-        return parts.slice(0, 3).join(".");
-      }
+      if (iface.family !== "IPv4" || iface.internal) continue;
+      const [a, b] = iface.address.split(".").map(Number);
+      // Solo rangos privados LAN (excluye Tailscale 100.x y otros)
+      const isLan =
+        a === 10 ||
+        (a === 172 && b >= 16 && b <= 31) ||
+        (a === 192 && b === 168);
+      if (isLan) candidates.push(iface.address);
     }
   }
-  return null;
+
+  if (candidates.length === 0) return null;
+  // Preferir Wi-Fi/Ethernet sobre VPN: tomar el primero del rango más común
+  const parts = candidates[0].split(".");
+  return parts.slice(0, 3).join(".");
 }
 
 /**
@@ -141,13 +151,18 @@ function printTestTicket(ip, port) {
     };
 
     socket.setTimeout(5000);
-    socket.on("timeout", () => done(new Error("Timeout al conectar con la impresora")));
+    socket.on("timeout", () =>
+      done(new Error("Timeout al conectar con la impresora")),
+    );
     socket.on("error", (err) => done(err));
 
     socket.connect(port, ip, () => {
       const now = new Date();
       const fecha = now.toLocaleDateString("es-MX");
-      const hora = now.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" });
+      const hora = now.toLocaleTimeString("es-MX", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
 
       const buf = [];
 
@@ -201,7 +216,55 @@ function setupPrinterTestHandler(syncSocket) {
       syncSocket.emit("print_test_ack", { requestId, success: true, ip });
     } catch (error) {
       console.error(`[PRINTERS] Error test ticket: ${error.message}`);
-      syncSocket.emit("print_test_ack", { requestId, success: false, ip, error: error.message });
+      syncSocket.emit("print_test_ack", {
+        requestId,
+        success: false,
+        ip,
+        error: error.message,
+      });
+    }
+  });
+}
+
+/**
+ * Handler para listar impresoras USB/locales instaladas en Windows.
+ */
+function setupUsbPrinterHandlers(syncSocket) {
+  syncSocket.on("list_usb_printers", async (data) => {
+    console.log("[PRINTERS] Listando impresoras USB/locales, requestId:", data?.requestId);
+    try {
+      const names = await listLocalPrinters();
+      syncSocket.emit("list_usb_printers_ack", {
+        requestId: data?.requestId,
+        success: true,
+        printers: names.map((name) => ({ device_name: name, vendor_id: 0, product_id: 0 })),
+      });
+    } catch (error) {
+      console.error("[PRINTERS] Error listando USB:", error.message);
+      syncSocket.emit("list_usb_printers_ack", {
+        requestId: data?.requestId,
+        success: false,
+        error: error.message,
+      });
+    }
+  });
+
+  syncSocket.on("print_test_usb", async (data) => {
+    const { printerName, requestId } = data || {};
+    console.log(`[PRINTERS] Test USB → ${printerName}`);
+    try {
+      const { buildTestTicketUsb } = require("./printing");
+      const ticket = buildTestTicketUsb(printerName);
+      await printRawUsb(printerName, ticket);
+      syncSocket.emit("print_test_usb_ack", { requestId, success: true, printerName });
+    } catch (error) {
+      console.error(`[PRINTERS] Error test USB: ${error.message}`);
+      syncSocket.emit("print_test_usb_ack", {
+        requestId,
+        success: false,
+        printerName,
+        error: error.message,
+      });
     }
   });
 }
@@ -210,4 +273,5 @@ module.exports = {
   discoverPrinters,
   setupPrinterHandlers,
   setupPrinterTestHandler,
+  setupUsbPrinterHandlers,
 };

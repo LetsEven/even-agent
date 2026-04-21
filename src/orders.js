@@ -292,7 +292,9 @@ async function insertOrder(orderData) {
     .join(",");
   const nombresResult = await pool
     .request()
-    .query(`SELECT idproducto, descripcion FROM productos WHERE idproducto IN (${ids})`);
+    .query(
+      `SELECT idproducto, descripcion FROM productos WHERE idproducto IN (${ids})`,
+    );
   const nombreMap = {};
   for (const r of nombresResult.recordset) {
     nombreMap[r.idproducto] = r.descripcion;
@@ -306,6 +308,7 @@ async function insertOrder(orderData) {
 
   return {
     folio,
+    numcheque,
     total: totalConDescuento,
     subtotal: subtotalSinImp,
     tax: totalImpuesto,
@@ -420,8 +423,7 @@ async function applyPayment(folio, amount, tenderId, reference, tip = 0) {
     .input("folio", sql.BigInt, folio)
     .input("idformadepago", sql.VarChar, formaPago)
     .input("importe", sql.Money, importePago)
-    .input("propina", sql.Money, propinaPago)
-    .query(`
+    .input("propina", sql.Money, propinaPago).query(`
       INSERT INTO tempchequespagos (folio, idformadepago, importe, propina, tipodecambio, sistema_envio, referencia)
       VALUES (@folio, @idformadepago, @importe, @propina, 1.00, 1, '')
     `);
