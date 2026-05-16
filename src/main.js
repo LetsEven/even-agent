@@ -1,5 +1,5 @@
 /**
- * Xquisito Agent - Main Process
+ * Even Agent - Main Process
  * Integra sincronización con Soft Restaurant via WebSocket
  */
 
@@ -13,16 +13,16 @@ const {
   Notification,
 } = require("electron");
 
-app.setName("Xquisito");
-app.setAppUserModelId("com.xquisito.agent");
+app.setName("Even");
+app.setAppUserModelId("com.even.agent");
 
-// Registrar AUMID en Windows para que las notificaciones muestren "Xquisito"
+// Registrar AUMID en Windows para que las notificaciones muestren "Even"
 const { execSync } = require("child_process");
 try {
   execSync(
     `powershell -Command "` +
-      `New-Item -Path 'HKCU:\\SOFTWARE\\Classes\\AppUserModelId\\com.xquisito.agent' -Force | Out-Null;` +
-      `New-ItemProperty -Path 'HKCU:\\SOFTWARE\\Classes\\AppUserModelId\\com.xquisito.agent' -Name 'DisplayName' -Value 'Xquisito' -Force | Out-Null` +
+      `New-Item -Path 'HKCU:\\SOFTWARE\\Classes\\AppUserModelId\\com.even.agent' -Force | Out-Null;` +
+      `New-ItemProperty -Path 'HKCU:\\SOFTWARE\\Classes\\AppUserModelId\\com.even.agent' -Name 'DisplayName' -Value 'Even' -Force | Out-Null` +
       `"`,
     { windowsHide: true },
   );
@@ -147,10 +147,10 @@ function saveConfig(branchId, syncToken) {
 
   const config = {
     sqlServer: sqlConfig,
-    xquisito: {
+    even: {
       branchId: branchId,
       syncToken: syncToken,
-      wsUrl: "https://xquisito-backend-production.up.railway.app/sync",
+      wsUrl: "https://even-backend-production.up.railway.app/sync",
       //wsUrl: "http://localhost:5000/sync",
     },
   };
@@ -202,12 +202,15 @@ function setupOrderHandlers() {
       const orderData = transformOrder(data);
       console.log("[ORDER] Mesa transformada:", orderData.mesa);
       const result = await insertOrder(orderData);
-      console.log(`[ORDER] Resultado insertOrder:`, JSON.stringify({
-        folio: result.folio,
-        numcheque: result.numcheque,
-        duplicate: result.duplicate ?? false,
-        total: result.total,
-      }));
+      console.log(
+        `[ORDER] Resultado insertOrder:`,
+        JSON.stringify({
+          folio: result.folio,
+          numcheque: result.numcheque,
+          duplicate: result.duplicate ?? false,
+          total: result.total,
+        }),
+      );
       if (result.descuento > 0) {
         console.log(`[ORDER] Descuento: $${result.descuento.toFixed(2)}`);
       }
@@ -358,7 +361,7 @@ async function startAgent() {
     );
 
     // WebSocket connection
-    const wsUrl = config.xquisito.wsUrl.replace("/sync", "");
+    const wsUrl = config.even.wsUrl.replace("/sync", "");
     syncSocket = io(`${wsUrl}/sync`, {
       transports: ["websocket"],
       reconnection: true,
@@ -375,8 +378,8 @@ async function startAgent() {
       if (syncSocket && syncSocket.connected) {
         console.log("[WS] Enviando registro...");
         syncSocket.emit("register", {
-          branchId: config.xquisito.branchId,
-          syncToken: config.xquisito.syncToken,
+          branchId: config.even.branchId,
+          syncToken: config.even.syncToken,
           agentVersion: "1.0.0",
         });
       }
@@ -529,9 +532,7 @@ function updateTray() {
   if (!tray) return;
 
   tray.setImage(createTrayIcon(isConnected));
-  tray.setToolTip(
-    `Xquisito Agent - ${isConnected ? "Conectado" : "Desconectado"}`,
-  );
+  tray.setToolTip(`Even Agent - ${isConnected ? "Conectado" : "Desconectado"}`);
 
   const contextMenu = Menu.buildFromTemplate([
     {
@@ -560,7 +561,7 @@ function updateTray() {
 
 function createTray() {
   tray = new Tray(createTrayIcon(false));
-  tray.setToolTip("Xquisito Agent");
+  tray.setToolTip("Even Agent");
   tray.on("double-click", showWindow);
   updateTray();
 }
@@ -645,12 +646,12 @@ ipcMain.handle("save-full-config", async (event, configData) => {
         database: configData.sqlDatabase || "softrestaurant10",
         port: parseInt(configData.sqlPort) || 1433,
       },
-      xquisito: {
+      even: {
         branchId: configData.branchId,
         syncToken: configData.syncToken,
         wsUrl:
           configData.wsUrl ||
-          "https://xquisito-backend-production.up.railway.app/sync",
+          "https://even-backend-production.up.railway.app/sync",
         //wsUrl: configData.wsUrl || "http://localhost:5000/sync",
       },
     };
@@ -701,7 +702,7 @@ ipcMain.handle("report-printers", async (event, printers) => {
   try {
     if (syncSocket && syncSocket.connected) {
       syncSocket.emit("printers_report", {
-        branchId: currentConfig?.xquisito?.branchId,
+        branchId: currentConfig?.even?.branchId,
         printers,
       });
     }

@@ -8,7 +8,7 @@ const {
   getPool,
   ensureSqlConnection,
   getActiveTurno,
-  getOrCreateMeseroXquisito,
+  getOrCreateMeseroEven,
   getNextFolios,
 } = require("./database");
 const { applyPromoToItem } = require("./promos");
@@ -16,7 +16,7 @@ const { applyPromoToItem } = require("./promos");
 // Genera código único para codigo_unico_af
 function generateCodigoUnicoAF() {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-  let code = "XQ"; // Prefijo Xquisito
+  let code = "XQ"; // Prefijo Even
   for (let i = 0; i < 7; i++) {
     code += chars.charAt(Math.floor(Math.random() * chars.length));
   }
@@ -114,21 +114,21 @@ async function insertOrder(orderData) {
   // 3. INSERT cheques con todos los campos correctos (no NULLs)
   const codigoUnicoAF = generateCodigoUnicoAF();
 
-  // Obtener o crear mesero XQUISITO
-  const idmesero = await getOrCreateMeseroXquisito();
+  // Obtener o crear mesero EVEN
+  const idmesero = await getOrCreateMeseroEven();
 
   const insertResult = await pool
     .request()
-    .input("estacion", sql.VarChar, "XQUISITO")
+    .input("estacion", sql.VarChar, "EVEN")
     .input("numcheque", sql.BigInt, numcheque)
-    .input("mesa", sql.VarChar, orderData.mesa || "XQ01")
+    .input("mesa", sql.VarChar, orderData.mesa || "1")
     .input("nopersonas", sql.Int, orderData.nopersonas || 1)
     .input("idmesero", sql.VarChar, idmesero)
     .input("idarearestaurant", sql.VarChar, orderData.idarearestaurant || "03")
     .input("idempresa", sql.VarChar, idempresa)
     .input("tipodeservicio", sql.Int, 1)
     .input("idturno", sql.BigInt, turno.idturno)
-    .input("usuarioapertura", sql.VarChar, "XQUISITO")
+    .input("usuarioapertura", sql.VarChar, "EVEN")
     .input("subtotal", sql.Money, subtotalSinImp)
     .input("subtotalsinimpuestos", sql.Money, subtotalSinImp)
     .input("total", sql.Money, totalConDescuento)
@@ -147,7 +147,7 @@ async function insertOrder(orderData) {
     .input("totalalimentossindescuentos", sql.Money, totalConDescuento)
     .input("codigounicoaf", sql.VarChar, codigoUnicoAF)
     .input("observaciones", sql.VarChar, orderData.observaciones || "")
-    .input("appname", sql.VarChar, "XQUISITO")
+    .input("appname", sql.VarChar, "EVEN")
     .input("orden", sql.BigInt, orden)
     .input("folionotadeconsumo", sql.BigInt, folionotadeconsumo)
     .input("orderreference", sql.VarChar, orderRef).query(`
@@ -220,7 +220,7 @@ async function insertOrder(orderData) {
         '', '',
         '', '', '', '',
         '', '', '', '',
-        '', 0, 'XQUISITO'
+        '', 0, 'EVEN'
       )
     `);
 
@@ -259,7 +259,7 @@ async function insertOrder(orderData) {
       .input("promovolumen", sql.Bit, item.promovolumen ? 1 : 0)
       .input("impuesto1", sql.Numeric, impuesto)
       .input("preciosinimpuestos", sql.Money, precioSinImp)
-      .input("idestacion", sql.VarChar, "XQUISITO")
+      .input("idestacion", sql.VarChar, "EVEN")
       .input("comentario", sql.VarChar, comentario).query(`
         INSERT INTO tempcheqdet (
           foliodet, movimiento, cantidad, idproducto, precio,
@@ -570,7 +570,7 @@ async function addItemsToOrder(folio, items) {
       .input("promovolumen", sql.Bit, item.promovolumen ? 1 : 0)
       .input("impuesto1", sql.Numeric, impuesto)
       .input("preciosinimpuestos", sql.Money, precioSinImp)
-      .input("idestacion", sql.VarChar, "XQUISITO")
+      .input("idestacion", sql.VarChar, "EVEN")
       .input("comentario", sql.VarChar, comentario).query(`
         INSERT INTO tempcheqdet (
           foliodet, movimiento, cantidad, idproducto, precio,
@@ -699,28 +699,28 @@ async function getChecksByTable(tableNumber, includeClosed = false) {
   return { checks };
 }
 
-// Transforma orden de Xquisito a formato Soft Restaurant
-function transformOrder(xquisitoOrder) {
+// Transforma orden de Even a formato Soft Restaurant
+function transformOrder(evenOrder) {
   // Asegurar que mesa sea siempre un string válido
-  let mesa = xquisitoOrder.tableNumber || xquisitoOrder.table_number || "XQ01";
+  let mesa = evenOrder.tableNumber || evenOrder.table_number || "1";
   if (mesa === null || mesa === undefined || mesa === "") {
-    mesa = "XQ01";
+    mesa = "1";
   }
-  mesa = String(mesa).trim() || "XQ01";
+  mesa = String(mesa).trim() || "1";
 
   // idarearestaurant: "01" = COMEDOR (dine_in), "03" = RAPIDO (pick_and_go, room_service, etc.)
   const idarearestaurant = "01";
 
   return {
     mesa,
-    nopersonas: xquisitoOrder.guests || 1,
+    nopersonas: evenOrder.guests || 1,
     idmesero: "",
     idarearestaurant: idarearestaurant,
     idempresa: "1",
-    tipodeservicio: xquisitoOrder.orderType === "delivery" ? 2 : 3,
-    observaciones: xquisitoOrder.notes || "",
-    orderReference: xquisitoOrder.id || `XQ-${Date.now()}`,
-    items: (xquisitoOrder.items || []).map((item) => ({
+    tipodeservicio: evenOrder.orderType === "delivery" ? 2 : 3,
+    observaciones: evenOrder.notes || "",
+    orderReference: evenOrder.id || `EV-${Date.now()}`,
+    items: (evenOrder.items || []).map((item) => ({
       idproducto: item.productId || item.sku,
       cantidad: item.quantity || 1,
       precio: item.price || 0,

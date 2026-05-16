@@ -175,17 +175,17 @@ function buildTicket({
   if (identifier) {
     const num = identifier.match(/\d+/)?.[0];
     if (/habitaci/i.test(identifier) || /cuarto/i.test(identifier)) {
-      buf.push(ascii(`HABITACION: ${num || identifier} MESERO: XQUISITO\n\n`));
+      buf.push(ascii(`HABITACION: ${num || identifier} MESERO: EVEN\n\n`));
     } else if (/pick/i.test(identifier)) {
-      buf.push(ascii(`MESERO: XQUISITO\n\n`));
+      buf.push(ascii(`MESERO: EVEN\n\n`));
     } else {
       // Mesa
       const mesaLabel = num ? String(num).padStart(2, "0") : identifier;
-      buf.push(ascii(`MESA: ${mesaLabel} MESERO: XQUISITO\n\n`));
+      buf.push(ascii(`MESA: ${mesaLabel} MESERO: EVEN\n\n`));
     }
   } else {
     // Formato SR POS: "MESA: 05 - PERSONAS:3 MESERO: JUAN"
-    const meseroLabel = mesero ? `MESERO: ${mesero}` : "MESERO: XQUISITO";
+    const meseroLabel = mesero ? `MESERO: ${mesero}` : "MESERO: EVEN";
     buf.push(
       ascii(
         `MESA: ${String(mesa).padStart(2, "0")} - PERSONAS:${nopersonas} ${meseroLabel}\n`.trimEnd() +
@@ -319,14 +319,28 @@ async function printOrderTickets(orderData, rawOrder, folio) {
     if (printer.connection_type === "usb" && printer.usb_device_name) {
       jobs.push(
         printRawUsb(printer.usb_device_name, ticketBuf)
-          .then(() => console.log(`[PRINT] ✅ Ticket USB enviado a ${printer.usb_device_name} (${role})`))
-          .catch((err) => console.error(`[PRINT] ❌ Error USB ${printer.usb_device_name}: ${err.message}`)),
+          .then(() =>
+            console.log(
+              `[PRINT] ✅ Ticket USB enviado a ${printer.usb_device_name} (${role})`,
+            ),
+          )
+          .catch((err) =>
+            console.error(
+              `[PRINT] ❌ Error USB ${printer.usb_device_name}: ${err.message}`,
+            ),
+          ),
       );
     } else {
       jobs.push(
         sendToPrinter(printer.ip, printer.port || PRINTER_PORT, ticketBuf)
-          .then(() => console.log(`[PRINT] ✅ Ticket enviado a ${printer.ip} (${role})`))
-          .catch((err) => console.error(`[PRINT] ❌ Error enviando a ${printer.ip}: ${err.message}`)),
+          .then(() =>
+            console.log(`[PRINT] ✅ Ticket enviado a ${printer.ip} (${role})`),
+          )
+          .catch((err) =>
+            console.error(
+              `[PRINT] ❌ Error enviando a ${printer.ip}: ${err.message}`,
+            ),
+          ),
       );
     }
   }
@@ -381,14 +395,28 @@ async function printJobFromBackend({ items, orderInfo }) {
     if (printer.connection_type === "usb" && printer.usb_device_name) {
       jobs.push(
         printRawUsb(printer.usb_device_name, ticketBuf)
-          .then(() => console.log(`[PRINT] ✅ print_job USB enviado a ${printer.usb_device_name} (${role})`))
-          .catch((err) => console.error(`[PRINT] ❌ Error USB ${printer.usb_device_name}: ${err.message}`)),
+          .then(() =>
+            console.log(
+              `[PRINT] ✅ print_job USB enviado a ${printer.usb_device_name} (${role})`,
+            ),
+          )
+          .catch((err) =>
+            console.error(
+              `[PRINT] ❌ Error USB ${printer.usb_device_name}: ${err.message}`,
+            ),
+          ),
       );
     } else {
       jobs.push(
         sendToPrinter(printer.ip, printer.port || PRINTER_PORT, ticketBuf)
-          .then(() => console.log(`[PRINT] ✅ print_job enviado a ${printer.ip} (${role})`))
-          .catch((err) => console.error(`[PRINT] ❌ Error en ${printer.ip}: ${err.message}`)),
+          .then(() =>
+            console.log(
+              `[PRINT] ✅ print_job enviado a ${printer.ip} (${role})`,
+            ),
+          )
+          .catch((err) =>
+            console.error(`[PRINT] ❌ Error en ${printer.ip}: ${err.message}`),
+          ),
       );
     }
   }
@@ -399,15 +427,23 @@ async function printJobFromBackend({ items, orderInfo }) {
 function buildTestTicketUsb(printerName) {
   const now = new Date();
   const fecha =
-    now.toLocaleDateString("es-MX", { day: "2-digit", month: "2-digit", year: "numeric" }) +
+    now.toLocaleDateString("es-MX", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    }) +
     " " +
-    now.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    now.toLocaleTimeString("es-MX", {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
 
   const buf = [];
   buf.push(init(), alignCenter(), doubleSize());
   buf.push(ascii("\n== CUENTA NUEVA ==\n"));
   buf.push(doubleWidth());
-  buf.push(ascii(`\nXQUISITO PRINT USB\n${fecha}\n`));
+  buf.push(ascii(`\nEVEN PRINT USB\n${fecha}\n`));
   buf.push(ascii(`${SEPARATOR}\n`));
   buf.push(ascii(`Impresora: ${printerName}\n`));
   buf.push(ascii(`${SEPARATOR}\n`));

@@ -18,7 +18,7 @@ const { getDynamicPort } = require("./softRestDiscovery");
 // Encrypted store for SQL credentials
 const credentialStore = new Store({
   name: "sql-credentials",
-  encryptionKey: "xquisito-agent-secure-key-2024",
+  encryptionKey: "even-agent-secure-key-2024",
   schema: {
     host: { type: "string" },
     database: { type: "string" },
@@ -29,7 +29,7 @@ const credentialStore = new Store({
 });
 
 // Usuario de la aplicación con permisos mínimos
-const APP_USER = "xquisito_agent";
+const APP_USER = "even_agent";
 
 function generateSecurePassword() {
   // Generar contraseña segura para el usuario de la app

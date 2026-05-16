@@ -174,7 +174,7 @@ function printTestTicket(ip, port) {
 
       // Texto doble ancho+alto
       buf.push(Buffer.from([0x1b, 0x21, 0x30]));
-      buf.push(Buffer.from("XQUISITO\n", "ascii"));
+      buf.push(Buffer.from("EVEN\n", "ascii"));
 
       // Texto normal
       buf.push(Buffer.from([0x1b, 0x21, 0x00]));
@@ -231,13 +231,20 @@ function setupPrinterTestHandler(syncSocket) {
  */
 function setupUsbPrinterHandlers(syncSocket) {
   syncSocket.on("list_usb_printers", async (data) => {
-    console.log("[PRINTERS] Listando impresoras USB/locales, requestId:", data?.requestId);
+    console.log(
+      "[PRINTERS] Listando impresoras USB/locales, requestId:",
+      data?.requestId,
+    );
     try {
       const names = await listLocalPrinters();
       syncSocket.emit("list_usb_printers_ack", {
         requestId: data?.requestId,
         success: true,
-        printers: names.map((name) => ({ device_name: name, vendor_id: 0, product_id: 0 })),
+        printers: names.map((name) => ({
+          device_name: name,
+          vendor_id: 0,
+          product_id: 0,
+        })),
       });
     } catch (error) {
       console.error("[PRINTERS] Error listando USB:", error.message);
@@ -256,7 +263,11 @@ function setupUsbPrinterHandlers(syncSocket) {
       const { buildTestTicketUsb } = require("./printing");
       const ticket = buildTestTicketUsb(printerName);
       await printRawUsb(printerName, ticket);
-      syncSocket.emit("print_test_usb_ack", { requestId, success: true, printerName });
+      syncSocket.emit("print_test_usb_ack", {
+        requestId,
+        success: true,
+        printerName,
+      });
     } catch (error) {
       console.error(`[PRINTERS] Error test USB: ${error.message}`);
       syncSocket.emit("print_test_usb_ack", {

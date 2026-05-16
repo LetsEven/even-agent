@@ -1,13 +1,13 @@
 {
-  "name": "xquisito-agent",
+  "name": "even-agent",
   "version": "1.0.0",
-  "description": "Agente de sincronizacion Xquisito - Soft Restaurant",
+  "description": "Agente de sincronizacion Even - Soft Restaurant",
   "main": "src/main.js",
   "scripts": {
     "start": "electron .",
     "build": "electron-builder --win"
   },
-  "author": "Xquisito",
+  "author": "Even",
   "license": "UNLICENSED",
   "dependencies": {
     "electron-store": "^8.1.0",
@@ -19,13 +19,13 @@
     "electron-builder": "^24.9.1"
   },
   "build": {
-    "appId": "com.xquisito.agent",
-    "productName": "Xquisito Agent",
+    "appId": "com.even.agent",
+    "productName": "Even Agent",
     "icon": "assets/icon-white.ico",
     "win": {
       "target": "portable",
       "signAndEditExecutable": false,
-      "artifactName": "Xquisito Agent.${ext}",
+      "artifactName": "Even Agent.${ext}",
       "icon": "assets/icon-white.ico"
     },
     "files": [

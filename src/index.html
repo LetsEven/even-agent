@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Xquisito Agent</title>
+    <title>Even Agent</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
@@ -12,11 +12,11 @@
         <div class="logo-icon">
           <img
             src="../assets/icon-white.ico"
-            alt="Xquisito"
+            alt="Even"
             style="width: 36px; height: 36px"
           />
         </div>
-        <h1>Xquisito Agent</h1>
+        <h1>Even Agent</h1>
         <p>Sincronizacion con Soft Restaurant</p>
       </div>
 
@@ -26,7 +26,7 @@
       </div>
 
       <form id="configForm">
-        <div class="section-title">Xquisito Cloud</div>
+        <div class="section-title">Even Cloud</div>
 
         <div class="form-group">
           <label>Branch ID</label>
@@ -81,7 +81,12 @@
 
       <!-- Impresoras -->
       <div class="section-title" style="margin-top: 16px">Impresoras WiFi</div>
-      <button id="btnScanPrinters" type="button" class="btn btn-secondary" style="margin-bottom: 8px">
+      <button
+        id="btnScanPrinters"
+        type="button"
+        class="btn btn-secondary"
+        style="margin-bottom: 8px"
+      >
         Escanear red
       </button>
       <div id="printersScanMsg" class="message"></div>
@@ -290,7 +295,7 @@
 
       async function checkSqlStatus() {
         try {
-          const status = await window.xquisito.sqlOnboarding.getStatus();
+          const status = await window.even.sqlOnboarding.getStatus();
           sqlConfigured = status.isConfigured;
           sqlCredentials = status.credentials;
           updateSqlStatusUI();
@@ -346,7 +351,7 @@
 
         // Start auto-discovery
         try {
-          const discovery = await window.xquisito.sqlOnboarding.discover();
+          const discovery = await window.even.sqlOnboarding.discover();
 
           if (discovery.found && discovery.config) {
             discoveredConfig = discovery.config;
@@ -397,7 +402,7 @@
 
         try {
           // Test the credentials first
-          const testResult = await window.xquisito.sqlOnboarding.testSql({
+          const testResult = await window.even.sqlOnboarding.testSql({
             host,
             database,
             user,
@@ -406,7 +411,7 @@
 
           if (testResult.success) {
             // Credentials work! Save them
-            await window.xquisito.sqlOnboarding.saveSql({
+            await window.even.sqlOnboarding.saveSql({
               host,
               database,
               user,
@@ -475,9 +480,9 @@
 
       function loadConfig(config) {
         if (config) {
-          if (config.xquisito) {
-            branchIdInput.value = config.xquisito.branchId || "";
-            syncTokenInput.value = config.xquisito.syncToken || "";
+          if (config.even) {
+            branchIdInput.value = config.even.branchId || "";
+            syncTokenInput.value = config.even.syncToken || "";
           }
           if (config.sqlServer) {
             sqlHostInput.value = config.sqlServer.host || "";
@@ -486,9 +491,9 @@
         }
       }
 
-      window.xquisito.onLoadConfig(loadConfig);
+      window.even.onLoadConfig(loadConfig);
 
-      window.xquisito.onAgentStatus((status) => {
+      window.even.onAgentStatus((status) => {
         updateStatus(status.connected);
       });
 
@@ -527,7 +532,7 @@
           return;
         }
 
-        const result = await window.xquisito.saveFullConfig(configData);
+        const result = await window.even.saveFullConfig(configData);
         if (result.success) {
           showMessage("Guardado. Reconectando...", "success");
         } else {
@@ -547,7 +552,9 @@
         printersScanMsg.textContent = text;
         printersScanMsg.className = "message " + type;
         if (type !== "info") {
-          setTimeout(() => { printersScanMsg.className = "message"; }, 4000);
+          setTimeout(() => {
+            printersScanMsg.className = "message";
+          }, 4000);
         }
       }
 
@@ -558,24 +565,27 @@
         showScanMsg("Escaneando red local, espera...", "info");
 
         try {
-          const result = await window.xquisito.scanPrinters();
+          const result = await window.even.scanPrinters();
           const { printers = [], subnet } = result;
 
           showScanMsg(
             printers.length > 0
               ? `${printers.length} impresora(s) encontrada(s) en ${subnet}.0/24`
               : `Sin impresoras en ${subnet}.0/24`,
-            printers.length > 0 ? "success" : "error"
+            printers.length > 0 ? "success" : "error",
           );
 
           if (printers.length > 0) {
             printersList.innerHTML = printers
-              .map(p => `<div class="printer-item"><span class="printer-ip">${p.ip}</span><span class="printer-port">:${p.port}</span></div>`)
+              .map(
+                (p) =>
+                  `<div class="printer-item"><span class="printer-ip">${p.ip}</span><span class="printer-port">:${p.port}</span></div>`,
+              )
               .join("");
             printersList.classList.remove("hidden");
 
             // Reportar al backend para guardar
-            await window.xquisito.reportPrinters(printers);
+            await window.even.reportPrinters(printers);
           }
         } catch (err) {
           showScanMsg("Error: " + err.message, "error");
@@ -589,8 +599,8 @@
       // Initialize
       // ============================================
 
-      window.xquisito.getStatus().then((s) => updateStatus(s.connected));
-      window.xquisito.getConfig().then(loadConfig);
+      window.even.getStatus().then((s) => updateStatus(s.connected));
+      window.even.getConfig().then(loadConfig);
       checkSqlStatus();
     </script>
   </body>

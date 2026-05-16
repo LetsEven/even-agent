@@ -84,8 +84,8 @@ if (-not [RawPrint]::WritePrinter($handle, $data, $data.Length, [ref]$written)) 
 function printRawUsb(printerName, dataBuffer) {
   return new Promise((resolve, reject) => {
     // Escribir datos a archivo temporal
-    const tmpFile = path.join(os.tmpdir(), `xquisito_print_${Date.now()}.bin`);
-    const ps1File = path.join(os.tmpdir(), `xquisito_print_${Date.now()}.ps1`);
+    const tmpFile = path.join(os.tmpdir(), `even_print_${Date.now()}.bin`);
+    const ps1File = path.join(os.tmpdir(), `even_print_${Date.now()}.ps1`);
 
     try {
       fs.writeFileSync(tmpFile, dataBuffer);
@@ -99,16 +99,24 @@ function printRawUsb(printerName, dataBuffer) {
       [
         "-NoProfile",
         "-NonInteractive",
-        "-ExecutionPolicy", "Bypass",
-        "-File", ps1File,
-        "-PrinterName", printerName,
-        "-DataFile", tmpFile,
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        ps1File,
+        "-PrinterName",
+        printerName,
+        "-DataFile",
+        tmpFile,
       ],
       { timeout: 15000 },
       (err, stdout, stderr) => {
         // Limpiar archivos temporales
-        try { fs.unlinkSync(tmpFile); } catch {}
-        try { fs.unlinkSync(ps1File); } catch {}
+        try {
+          fs.unlinkSync(tmpFile);
+        } catch {}
+        try {
+          fs.unlinkSync(ps1File);
+        } catch {}
 
         if (err) return reject(new Error(stderr?.trim() || err.message));
         resolve();

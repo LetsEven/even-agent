@@ -6,9 +6,9 @@
     "user": "sa",
     "password": ""
   },
-  "xquisito": {
+  "even": {
     "branchId": "TU_BRANCH_ID",
     "syncToken": "TU_SYNC_TOKEN",
-    "wsUrl": "https://xquisito-backend-production.up.railway.app/sync"
+    "wsUrl": "https://even-backend-production.up.railway.app/sync"
   }
 }

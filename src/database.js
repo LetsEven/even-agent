@@ -98,32 +98,40 @@ async function getActiveTurno() {
   `);
 
   if (!result.recordset || result.recordset.length === 0) {
-    throw new Error("No hay turnos en el sistema. Abra un turno en Soft Restaurant.");
+    throw new Error(
+      "No hay turnos en el sistema. Abra un turno en Soft Restaurant.",
+    );
   }
 
   const ultimoTurno = result.recordset[0];
 
   // Validar que el último turno esté abierto (cierre IS NULL)
   if (ultimoTurno.cierre !== null) {
-    throw new Error(`El último turno (${ultimoTurno.idturno}) está cerrado. Abra un nuevo turno en Soft Restaurant para recibir órdenes.`);
+    throw new Error(
+      `El último turno (${ultimoTurno.idturno}) está cerrado. Abra un nuevo turno en Soft Restaurant para recibir órdenes.`,
+    );
   }
 
-  console.log(`[TURNO] Turno activo: ${ultimoTurno.idturno} (interno: ${ultimoTurno.idturnointerno})`);
+  console.log(
+    `[TURNO] Turno activo: ${ultimoTurno.idturno} (interno: ${ultimoTurno.idturnointerno})`,
+  );
   return ultimoTurno;
 }
 
-// Obtener o crear mesero XQUISITO
-// Busca mesero con nombre XQUISITO, si no existe lo crea
-async function getOrCreateMeseroXquisito() {
+// Obtener o crear mesero EVEN
+// Busca mesero con nombre EVEN, si no existe lo crea
+async function getOrCreateMeseroEven() {
   await ensureSqlConnection();
 
-  // Buscar mesero existente con nombre XQUISITO
+  // Buscar mesero existente con nombre EVEN
   const existing = await sqlPool.request().query(`
-    SELECT idmesero FROM meseros WHERE nombre = 'XQUISITO'
+    SELECT idmesero FROM meseros WHERE nombre = 'EVEN'
   `);
 
   if (existing.recordset.length > 0) {
-    console.log(`[MESERO] Mesero XQUISITO encontrado: ${existing.recordset[0].idmesero}`);
+    console.log(
+      `[MESERO] Mesero EVEN encontrado: ${existing.recordset[0].idmesero}`,
+    );
     return existing.recordset[0].idmesero;
   }
 
@@ -133,12 +141,12 @@ async function getOrCreateMeseroXquisito() {
     SELECT MAX(CAST(idmesero AS INT)) as maxId FROM meseros WHERE ISNUMERIC(idmesero) = 1
   `);
   const nextId = (maxId.recordset[0].maxId || 0) + 1;
-  const idmesero = nextId.toString().padStart(2, '0'); // Formato "06", "07", etc.
+  const idmesero = nextId.toString().padStart(2, "0"); // Formato "06", "07", etc.
 
-  await sqlPool.request()
+  await sqlPool
+    .request()
     .input("idmesero", sql.VarChar, idmesero)
-    .input("nombre", sql.VarChar, "XQUISITO")
-    .query(`
+    .input("nombre", sql.VarChar, "EVEN").query(`
       INSERT INTO meseros (
         idmesero, nombre, contraseña, tipo, fotografia, visible,
         idempresa, tipoacceso, perfil,
@@ -154,7 +162,7 @@ async function getOrCreateMeseroXquisito() {
       )
     `);
 
-  console.log(`[MESERO] Mesero XQUISITO creado con id: ${idmesero}`);
+  console.log(`[MESERO] Mesero EVEN creado con id: ${idmesero}`);
   return idmesero;
 }
 
@@ -174,7 +182,9 @@ async function getNextFolios() {
 
   // Validar que hay resultados
   if (!result.recordset || result.recordset.length === 0) {
-    throw new Error("La tabla folios esta vacia. Inicialice los folios en Soft Restaurant.");
+    throw new Error(
+      "La tabla folios esta vacia. Inicialice los folios en Soft Restaurant.",
+    );
   }
 
   const row = result.recordset[0];
@@ -185,7 +195,9 @@ async function getNextFolios() {
     throw new Error("ultimaorden es NULL en la tabla folios");
   }
 
-  console.log(`[FOLIOS] folio: ${row.ultimofolio}, orden: ${row.ultimaorden}, notaconsumo: ${row.ultimofolionotadeconsumo}, produccion: ${row.ultimofolioproduccion}`);
+  console.log(
+    `[FOLIOS] folio: ${row.ultimofolio}, orden: ${row.ultimaorden}, notaconsumo: ${row.ultimofolionotadeconsumo}, produccion: ${row.ultimofolioproduccion}`,
+  );
 
   return {
     numcheque: row.ultimofolio,
@@ -202,6 +214,6 @@ module.exports = {
   getPool,
   closeConnection,
   getActiveTurno,
-  getOrCreateMeseroXquisito,
+  getOrCreateMeseroEven,
   getNextFolios,
 };
