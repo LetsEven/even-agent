@@ -378,7 +378,14 @@ async function updateDeclaracionCajero(
 }
 
 // Aplicar pago a un folio
-async function applyPayment(folio, amount, tenderId, reference, tip = 0) {
+async function applyPayment(
+  folio,
+  amount,
+  tenderId,
+  reference,
+  tip = 0,
+  paymentSource = null,
+) {
   await ensureSqlConnection();
   const pool = getPool();
 
@@ -398,21 +405,25 @@ async function applyPayment(folio, amount, tenderId, reference, tip = 0) {
   const turno = await getActiveTurno();
   const idTurnoCierre = turno.idturno;
 
-  // Determinar forma de pago: usar tenderId si se especifica, sino buscar tarjeta existente
+  // Determinar forma de pago: usar tenderId si se especifica, sino derivar de paymentSource
   let formaPago = tenderId;
   if (!formaPago) {
-    // Buscar forma de pago de tarjeta que exista en el sistema
-    const formasResult = await pool.request().query(`
-      SELECT TOP 1 idformadepago FROM formasdepago
-      WHERE idformadepago IN ('TC', 'TAR', 'TD')
-      ORDER BY CASE idformadepago WHEN 'TC' THEN 1 WHEN 'TAR' THEN 2 WHEN 'TD' THEN 3 END
-    `);
-    if (formasResult.recordset.length > 0) {
-      formaPago = formasResult.recordset[0].idformadepago;
+    if (paymentSource === "cash") {
+      formaPago = "EF";
     } else {
-      throw new Error(
-        "No se encontró forma de pago de tarjeta (TC, TAR, TD) en el sistema",
-      );
+      // Tarjeta/terminal: buscar forma de pago que exista en el sistema
+      const formasResult = await pool.request().query(`
+        SELECT TOP 1 idformadepago FROM formasdepago
+        WHERE idformadepago IN ('TC', 'TAR', 'TD')
+        ORDER BY CASE idformadepago WHEN 'TC' THEN 1 WHEN 'TAR' THEN 2 WHEN 'TD' THEN 3 END
+      `);
+      if (formasResult.recordset.length > 0) {
+        formaPago = formasResult.recordset[0].idformadepago;
+      } else {
+        throw new Error(
+          "No se encontró forma de pago de tarjeta (TC, TAR, TD) en el sistema",
+        );
+      }
     }
   }
   console.log(`[PAYMENT] Forma de pago: ${formaPago}, Turno: ${idTurnoCierre}`);
@@ -428,23 +439,41 @@ async function applyPayment(folio, amount, tenderId, reference, tip = 0) {
       VALUES (@folio, @idformadepago, @importe, @propina, 1.00, 1, '')
     `);
 
-  // Actualizar cheques: tarjeta y propina si aplica
+  // Actualizar cheques con el monto en la columna correcta según método de pago
   const nuevaPropina = propinaActual + propinaPago;
-  await pool
-    .request()
-    .input("folio", sql.BigInt, folio)
-    .input("tarjeta", sql.Money, importePago + propinaPago)
-    .input("propina", sql.Money, nuevaPropina)
-    .input("propinatarjeta", sql.Money, nuevaPropina).query(`
-      UPDATE tempcheques SET
-        tarjeta = ISNULL(tarjeta, 0) + @tarjeta,
-        propina = @propina,
-        propinatarjeta = @propinatarjeta,
-        totalconpropina = total + @propina,
-        totalconpropinacargo = totalconcargo + @propina,
-        propinapagada = CASE WHEN @propina > 0 THEN 1 ELSE propinapagada END
-      WHERE folio = @folio
-    `);
+  if (paymentSource === "cash") {
+    await pool
+      .request()
+      .input("folio", sql.BigInt, folio)
+      .input("efectivo", sql.Money, importePago + propinaPago)
+      .input("propina", sql.Money, nuevaPropina)
+      .input("propinatarjeta", sql.Money, nuevaPropina).query(`
+        UPDATE tempcheques SET
+          efectivo = ISNULL(efectivo, 0) + @efectivo,
+          propina = @propina,
+          propinatarjeta = @propinatarjeta,
+          totalconpropina = total + @propina,
+          totalconpropinacargo = totalconcargo + @propina,
+          propinapagada = CASE WHEN @propina > 0 THEN 1 ELSE propinapagada END
+        WHERE folio = @folio
+      `);
+  } else {
+    await pool
+      .request()
+      .input("folio", sql.BigInt, folio)
+      .input("tarjeta", sql.Money, importePago + propinaPago)
+      .input("propina", sql.Money, nuevaPropina)
+      .input("propinatarjeta", sql.Money, nuevaPropina).query(`
+        UPDATE tempcheques SET
+          tarjeta = ISNULL(tarjeta, 0) + @tarjeta,
+          propina = @propina,
+          propinatarjeta = @propinatarjeta,
+          totalconpropina = total + @propina,
+          totalconpropinacargo = totalconcargo + @propina,
+          propinapagada = CASE WHEN @propina > 0 THEN 1 ELSE propinapagada END
+        WHERE folio = @folio
+      `);
+  }
 
   if (propinaPago > 0) {
     console.log(

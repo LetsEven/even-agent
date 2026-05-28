@@ -263,6 +263,7 @@ function setupOrderHandlers() {
         data.tenderId,
         data.reference,
         data.tip || 0,
+        data.paymentSource || null,
       );
       console.log(`[PAYMENT] ${result.status}`);
       syncSocket.emit("apply_payment_ack", {
