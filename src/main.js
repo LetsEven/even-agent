@@ -414,10 +414,18 @@ async function startAgent() {
     });
 
     // Trabajo de impresión desde backend (FlexBill, Tap, Room, Pick&Go)
+    // Emite print_job_ack tras imprimir exitosamente (o si no hay impresoras → auto-ACK en backend)
     syncSocket.on("print_job", (data) => {
-      printJobFromBackend(data).catch((err) =>
-        console.error("[PRINT] Error en print_job:", err.message),
-      );
+      printJobFromBackend(data)
+        .then(() => {
+          if (data.jobId) {
+            syncSocket.emit("print_job_ack", { jobId: data.jobId });
+          }
+        })
+        .catch((err) => {
+          console.error("[PRINT] Error en print_job:", err.message);
+          // Sin ACK en error → backend reintenta tras timeout
+        });
     });
 
     syncSocket.on("register_error", (data) => {
@@ -827,6 +835,24 @@ ipcMain.handle("sql-onboarding-discover", async () => {
 
 ipcMain.handle("sql-onboarding-diagnostics", () => {
   return sqlOnboarding.getDiagnostics();
+});
+
+// Retorna el estado de flujo de órdenes para la sucursal actual
+ipcMain.handle("get-order-flow-status", async () => {
+  try {
+    const config = getConfig();
+    if (!config?.even?.branchId || !config?.even?.wsUrl) {
+      return { active_count: 0, max_pending_orders: null, is_high_demand: false };
+    }
+    const baseUrl = config.even.wsUrl.replace("/sync", "");
+    const branchId = config.even.branchId;
+    const res = await fetch(`${baseUrl}/api/branches/${branchId}/order-flow-status`);
+    if (!res.ok) return { active_count: 0, max_pending_orders: null, is_high_demand: false };
+    const { data } = await res.json();
+    return data;
+  } catch {
+    return { active_count: 0, max_pending_orders: null, is_high_demand: false };
+  }
 });
 
 // ============================================
