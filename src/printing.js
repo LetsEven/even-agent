@@ -95,6 +95,9 @@ function doubleSize() {
 function doubleWidth() {
   return Buffer.from([ESC, 0x21, 0x10]);
 } // doble ancho solo
+function normalSize() {
+  return Buffer.from([ESC, 0x21, 0x00]);
+} // texto normal
 function feedAndCut() {
   return Buffer.from([0x0a, 0x0a, 0x0a, GS, 0x56, 0x00]);
 }
@@ -132,7 +135,6 @@ function buildTicket({
   identifier,
   orderedBy = null,
 }) {
-  const roleLabel = ROLE_LABEL[role] || "GENERAL";
   const areaLabel = AREA_LABEL[idarearestaurant] || "COMEDOR";
 
   const now = new Date();
@@ -157,23 +159,24 @@ function buildTicket({
 
   // 2. Header centrado: doble ancho+alto
   buf.push(doubleSize());
-  buf.push(ascii(`\n== CUENTA NUEVA ==\n`));
-
-  // 2b. Folio centrado, siempre presente
-  buf.push(ascii(`== ${formatFolio(folio)} ==\n`));
+  const mesaNum = identifier
+    ? identifier.match(/\d+/)?.[0]
+    : String(mesa).padStart(2, "0");
+  const mesaHeader = `MESA ${mesaNum ? String(mesaNum).padStart(2, "0") : identifier || mesa}`;
+  buf.push(ascii(`${mesaHeader}\n`));
 
   // 2c. Nombre del comensal (si existe), mismo tamaño centrado
   if (orderedBy) {
     buf.push(ascii(`${orderedBy.toUpperCase()}\n`));
   }
 
-  // 3. Resto alineado izquierda, doble ancho solo
+  // 3. Resto alineado izquierda, texto normal
   buf.push(alignLeft());
-  buf.push(doubleWidth());
+  buf.push(normalSize());
 
   // 4. Línea destino + orden
   const ordenLabel = formatFolio(folio);
-  buf.push(ascii(`\n${roleLabel}(${areaLabel}) ORDEN: ${ordenLabel}\n`));
+  buf.push(ascii(`\n(${areaLabel}) ORDEN: ${ordenLabel}\n`));
 
   // 5. Fecha
   buf.push(ascii(`${fecha}\n`));

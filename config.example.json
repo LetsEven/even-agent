@@ -4,7 +4,7 @@
     "database": "softrestaurant10",
     "port": 1433,
     "user": "sa",
-    "password": ""
+    "password": "Even123!"
   },
   "even": {
     "branchId": "TU_BRANCH_ID",
