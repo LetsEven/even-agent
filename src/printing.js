@@ -5,6 +5,13 @@ const { printRawUsb } = require("./usbPrinters");
 const PRINTER_PORT = 9100;
 const PRINT_TIMEOUT_MS = 5000;
 
+// Folio sin ceros a la izquierda: "016" → "16". Alfanuméricos (POS) sin cambios.
+function formatFolio(folio) {
+  if (folio == null || folio === "") return "";
+  const s = String(folio);
+  return /^\d+$/.test(s) ? s.replace(/^0+(?=\d)/, "") : s;
+}
+
 // Impresoras activas de la sucursal — se actualiza via setPrinters()
 let activePrinters = [];
 
@@ -153,7 +160,7 @@ function buildTicket({
   buf.push(ascii(`\n== CUENTA NUEVA ==\n`));
 
   // 2b. Folio centrado, siempre presente
-  buf.push(ascii(`== ${String(folio).padStart(5, "0")} ==\n`));
+  buf.push(ascii(`== ${formatFolio(folio)} ==\n`));
 
   // 2c. Nombre del comensal (si existe), mismo tamaño centrado
   if (orderedBy) {
@@ -165,7 +172,7 @@ function buildTicket({
   buf.push(doubleWidth());
 
   // 4. Línea destino + orden
-  const ordenLabel = String(folio).padStart(5, "0");
+  const ordenLabel = formatFolio(folio);
   buf.push(ascii(`\n${roleLabel}(${areaLabel}) ORDEN: ${ordenLabel}\n`));
 
   // 5. Fecha

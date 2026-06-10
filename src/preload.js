@@ -46,6 +46,9 @@ contextBridge.exposeInMainWorld("even", {
   scanPrinters: () => ipcRenderer.invoke("scan-printers"),
   reportPrinters: (printers) => ipcRenderer.invoke("report-printers", printers),
 
+  // Control de flujo de órdenes
+  getOrderFlowStatus: () => ipcRenderer.invoke("get-order-flow-status"),
+
   // Eventos
   onLoadConfig: (callback) =>
     ipcRenderer.on("load-config", (event, config) => callback(config)),

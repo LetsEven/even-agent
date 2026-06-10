@@ -25,6 +25,10 @@
         <span id="statusText">Desconectado</span>
       </div>
 
+      <div id="orderFlowBar" class="status-bar" style="margin-top:6px;background:#1a1a2e;display:none">
+        <span id="orderFlowText" style="font-size:12px;color:#aaa">Órdenes activas: —</span>
+      </div>
+
       <form id="configForm">
         <div class="section-title">Even Cloud</div>
 
@@ -596,12 +600,43 @@
       });
 
       // ============================================
+      // Order Flow Status
+      // ============================================
+
+      const orderFlowBar = document.getElementById("orderFlowBar");
+      const orderFlowText = document.getElementById("orderFlowText");
+
+      async function refreshOrderFlowStatus() {
+        try {
+          const data = await window.even.getOrderFlowStatus();
+          if (data && data.max_pending_orders !== null) {
+            orderFlowBar.style.display = "";
+            const warn = data.is_high_demand ? " ⚠️" : "";
+            orderFlowText.textContent = `Órdenes activas: ${data.active_count} / ${data.max_pending_orders}${warn}`;
+            orderFlowBar.style.background = data.is_high_demand ? "#3d1a1a" : "#1a1a2e";
+          } else if (data && data.active_count > 0) {
+            orderFlowBar.style.display = "";
+            orderFlowText.textContent = `Órdenes activas: ${data.active_count}`;
+            orderFlowBar.style.background = "#1a1a2e";
+          } else {
+            orderFlowBar.style.display = "none";
+          }
+        } catch {
+          // Silencioso — no bloquear UI si falla
+        }
+      }
+
+      // Pollear cada 10 segundos
+      setInterval(refreshOrderFlowStatus, 10_000);
+
+      // ============================================
       // Initialize
       // ============================================
 
       window.even.getStatus().then((s) => updateStatus(s.connected));
       window.even.getConfig().then(loadConfig);
       checkSqlStatus();
+      refreshOrderFlowStatus();
     </script>
   </body>
 </html>
