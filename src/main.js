@@ -319,14 +319,13 @@ function setupOrderHandlers() {
 
   // Obtener cheques por mesa (Tap&Pay)
   syncSocket.on("get_checks_by_table", async (data) => {
-    console.log(`[GET_CHECKS] Mesa ${data.table}`);
     try {
       const result = await getChecksByTable(
         data.table,
         data.includeClosed || false,
       );
       console.log(
-        `[GET_CHECKS] ${result.checks.length} cheque(s) encontrado(s)`,
+        `[GET_CHECKS] Mesa ${data.table}: ${result.checks.length} cheque(s)`,
       );
       syncSocket.emit("get_checks_by_table_ack", {
         requestId: data.requestId,
@@ -842,12 +841,23 @@ ipcMain.handle("get-order-flow-status", async () => {
   try {
     const config = getConfig();
     if (!config?.even?.branchId || !config?.even?.wsUrl) {
-      return { active_count: 0, max_pending_orders: null, is_high_demand: false };
+      return {
+        active_count: 0,
+        max_pending_orders: null,
+        is_high_demand: false,
+      };
     }
     const baseUrl = config.even.wsUrl.replace("/sync", "");
     const branchId = config.even.branchId;
-    const res = await fetch(`${baseUrl}/api/branches/${branchId}/order-flow-status`);
-    if (!res.ok) return { active_count: 0, max_pending_orders: null, is_high_demand: false };
+    const res = await fetch(
+      `${baseUrl}/api/branches/${branchId}/order-flow-status`,
+    );
+    if (!res.ok)
+      return {
+        active_count: 0,
+        max_pending_orders: null,
+        is_high_demand: false,
+      };
     const { data } = await res.json();
     return data;
   } catch {
