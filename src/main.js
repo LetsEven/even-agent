@@ -52,6 +52,7 @@ const {
 const { setupSyncHandlers } = require("./sync");
 const {
   discoverPrinters,
+  listLocalPrinters,
   setupPrinterHandlers,
   setupPrinterTestHandler,
   setupUsbPrinterHandlers,
@@ -510,23 +511,43 @@ async function restartAgent() {
 // ============================================
 
 function createTrayIcon(connected) {
-  const size = 16;
+  const size = 32;
   const canvas = Buffer.alloc(size * size * 4);
-  const color = connected ? [0, 180, 0, 255] : [200, 0, 0, 255];
+  // Buffer format on Windows is BGRA, so store as [B, G, R]
+  const [r, g, b] = connected ? [87, 230, 130] : [68, 68, 239];
 
-  for (let y = 0; y < size; y++) {
-    for (let x = 0; x < size; x++) {
-      const idx = (y * size + x) * 4;
-      const cx = size / 2,
-        cy = size / 2,
-        r = 6;
-      const dist = Math.sqrt((x - cx) ** 2 + (y - cy) ** 2);
+  const cx = 15.5;
+  const cy = 15.5;
+  const halfLen = 12;
+  const halfWidth = 3.2;
 
-      if (dist <= r) {
-        canvas[idx] = color[0];
-        canvas[idx + 1] = color[1];
-        canvas[idx + 2] = color[2];
-        canvas[idx + 3] = color[3];
+  function distToSegment(px, py, ax, ay, bx, by) {
+    const dx = bx - ax, dy = by - ay;
+    const t = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / (dx * dx + dy * dy)));
+    return Math.sqrt((px - (ax + t * dx)) ** 2 + (py - (ay + t * dy)) ** 2);
+  }
+
+  for (let py = 0; py < size; py++) {
+    for (let px = 0; px < size; px++) {
+      const idx = (py * size + px) * 4;
+      let inShape = false;
+
+      for (let i = 0; i < 3; i++) {
+        const angle = (i * 60 * Math.PI) / 180;
+        const cosA = Math.cos(angle), sinA = Math.sin(angle);
+        const ax = cx - halfLen * cosA, ay = cy - halfLen * sinA;
+        const bx = cx + halfLen * cosA, by = cy + halfLen * sinA;
+        if (distToSegment(px, py, ax, ay, bx, by) <= halfWidth) {
+          inShape = true;
+          break;
+        }
+      }
+
+      if (inShape) {
+        canvas[idx] = r;
+        canvas[idx + 1] = g;
+        canvas[idx + 2] = b;
+        canvas[idx + 3] = 255;
       } else {
         canvas[idx + 3] = 0;
       }
@@ -592,11 +613,17 @@ function createWindow() {
     resizable: true,
     maximizable: true,
     show: false,
+    backgroundColor: "#023828",
     icon: getIconPath(),
     webPreferences: {
       contextIsolation: true,
       preload: path.join(__dirname, "preload.js"),
     },
+  });
+
+  mainWindow.once("ready-to-show", () => {
+    mainWindow.show();
+    mainWindow.focus();
   });
 
   mainWindow.loadFile(path.join(__dirname, "index.html"));
@@ -703,6 +730,15 @@ ipcMain.handle("scan-printers", async () => {
     return await discoverPrinters();
   } catch (error) {
     return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle("list-usb-printers", async () => {
+  try {
+    const printers = await listLocalPrinters();
+    return { success: true, printers };
+  } catch (error) {
+    return { success: false, printers: [], error: error.message };
   }
 });
 

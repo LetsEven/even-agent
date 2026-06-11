@@ -44,6 +44,7 @@ contextBridge.exposeInMainWorld("even", {
 
   // Impresoras
   scanPrinters: () => ipcRenderer.invoke("scan-printers"),
+  listUsbPrinters: () => ipcRenderer.invoke("list-usb-printers"),
   reportPrinters: (printers) => ipcRenderer.invoke("report-printers", printers),
 
   // Control de flujo de órdenes

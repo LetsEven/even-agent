@@ -5,18 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Even Agent</title>
     <link rel="stylesheet" href="styles.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&display=swap"
+      rel="stylesheet"
+    />
   </head>
   <body>
     <div class="container">
+      <div class="header">
       <div class="logo">
         <div class="logo-icon">
-          <img
-            src="../assets/icon-white.ico"
-            alt="Even"
-            style="width: 36px; height: 36px"
-          />
+          <img src="https://www.letseven.io/assets/even/asterisk-grass.png" alt="Even" />
         </div>
-        <h1>Even Agent</h1>
+        <h1>agent</h1>
         <p>Sincronizacion con Soft Restaurant</p>
       </div>
 
@@ -25,10 +28,8 @@
         <span id="statusText">Desconectado</span>
       </div>
 
-      <div id="orderFlowBar" class="status-bar" style="margin-top:6px;background:#1a1a2e;display:none">
-        <span id="orderFlowText" style="font-size:12px;color:#aaa">Órdenes activas: —</span>
-      </div>
-
+      </div><!-- /header -->
+      <div class="card-body">
       <form id="configForm">
         <div class="section-title">Even Cloud</div>
 
@@ -56,10 +57,12 @@
 
         <!-- SQL Status Card -->
         <div id="sqlStatusCard" class="sql-status">
-          <div id="sqlStatusIcon" class="sql-status-icon not-configured">?</div>
-          <div class="sql-status-info">
-            <h3 id="sqlStatusTitle">No configurado</h3>
-            <p id="sqlStatusDesc">Haz clic para configurar</p>
+          <div class="sql-status-main">
+            <div id="sqlStatusIcon" class="sql-status-icon not-configured">?</div>
+            <div class="sql-status-info">
+              <h3 id="sqlStatusTitle">No configurado</h3>
+              <p id="sqlStatusDesc">Haz clic para configurar</p>
+            </div>
           </div>
           <button
             type="button"
@@ -83,7 +86,7 @@
 
       <div id="message" class="message"></div>
 
-      <!-- Impresoras -->
+      <!-- Impresoras WiFi -->
       <div class="section-title" style="margin-top: 16px">Impresoras WiFi</div>
       <button
         id="btnScanPrinters"
@@ -95,6 +98,20 @@
       </button>
       <div id="printersScanMsg" class="message"></div>
       <div id="printersList" class="printers-list hidden"></div>
+
+      <!-- Impresoras USB -->
+      <div class="section-title" style="margin-top: 16px">Impresoras USB</div>
+      <button
+        id="btnScanUsbPrinters"
+        type="button"
+        class="btn btn-secondary"
+        style="margin-bottom: 8px"
+      >
+        Detectar USB
+      </button>
+      <div id="usbPrintersScanMsg" class="message"></div>
+      <div id="usbPrintersList" class="printers-list hidden"></div>
+      </div><!-- /card-body -->
     </div>
 
     <!-- SQL Onboarding Modal -->
@@ -109,10 +126,10 @@
         <div id="step0" class="onboarding-step active">
           <div class="step-result">
             <div class="loading-spinner"></div>
-            <h3 style="color: #fff; font-size: 14px">
+            <h3 style="color: #023828; font-size: 14px">
               Buscando configuracion...
             </h3>
-            <p style="color: #888; font-size: 11px; margin-top: 8px">
+            <p style="color: #299e66; font-size: 11px; margin-top: 8px">
               Detectando instalacion de Soft Restaurant
             </p>
           </div>
@@ -126,15 +143,22 @@
             style="
               margin-bottom: 12px;
               padding: 10px;
-              background: rgba(34, 197, 94, 0.1);
-              border-radius: 8px;
-              border: 1px solid rgba(34, 197, 94, 0.3);
+              background: rgba(130, 230, 87, 0.15);
+              border-radius: 4px;
+              border: 1px solid rgba(130, 230, 87, 0.5);
             "
           >
-            <p style="color: #22c55e; font-size: 11px; margin-bottom: 2px">
+            <p
+              style="
+                color: #023828;
+                font-size: 11px;
+                margin-bottom: 2px;
+                font-weight: 500;
+              "
+            >
               &#10003; Configuracion detectada
             </p>
-            <p id="discoverySource" style="color: #888; font-size: 10px"></p>
+            <p id="discoverySource" style="color: #299e66; font-size: 10px"></p>
           </div>
           <div
             id="vpnOption"
@@ -142,12 +166,19 @@
             style="
               margin-bottom: 12px;
               padding: 10px;
-              background: rgba(102, 126, 234, 0.1);
-              border-radius: 8px;
-              border: 1px solid rgba(102, 126, 234, 0.3);
+              background: rgba(195, 254, 255, 0.6);
+              border-radius: 4px;
+              border: 1px solid rgba(41, 158, 102, 0.4);
             "
           >
-            <p style="color: #667eea; font-size: 11px; margin-bottom: 6px">
+            <p
+              style="
+                color: #023828;
+                font-size: 11px;
+                margin-bottom: 6px;
+                font-weight: 500;
+              "
+            >
               &#128274; VPN detectada
             </p>
             <button
@@ -201,8 +232,8 @@
         <div id="step2" class="onboarding-step">
           <div class="step-result">
             <div class="loading-spinner"></div>
-            <h3 style="color: #fff; font-size: 14px">Conectando...</h3>
-            <p style="color: #888; font-size: 11px; margin-top: 8px">
+            <h3 style="color: #023828; font-size: 14px">Conectando...</h3>
+            <p style="color: #299e66; font-size: 11px; margin-top: 8px">
               Verificando credenciales de SQL Server
             </p>
           </div>
@@ -211,11 +242,13 @@
         <!-- Step Success -->
         <div id="stepSuccess" class="onboarding-step">
           <div class="step-result">
-            <div class="step-result-icon" style="color: #22c55e">&#10003;</div>
-            <h3 style="color: #fff; font-size: 14px">SQL Server Configurado</h3>
+            <div class="step-result-icon" style="color: #82e657">&#10003;</div>
+            <h3 style="color: #023828; font-size: 14px">
+              SQL Server Configurado
+            </h3>
             <p
               id="successMessage"
-              style="color: #888; font-size: 11px; margin-top: 8px"
+              style="color: #299e66; font-size: 11px; margin-top: 8px"
             ></p>
           </div>
           <button
@@ -232,7 +265,9 @@
         <div id="stepError" class="onboarding-step">
           <div class="step-result">
             <div class="step-result-icon" style="color: #ef4444">&#10007;</div>
-            <h3 style="color: #fff; font-size: 14px">Error de Configuracion</h3>
+            <h3 style="color: #023828; font-size: 14px">
+              Error de Configuracion
+            </h3>
             <p
               id="errorMessage"
               style="color: #ef4444; font-size: 11px; margin-top: 8px"
@@ -600,34 +635,56 @@
       });
 
       // ============================================
-      // Order Flow Status
+      // Impresoras USB
       // ============================================
 
-      const orderFlowBar = document.getElementById("orderFlowBar");
-      const orderFlowText = document.getElementById("orderFlowText");
+      const btnScanUsbPrinters = document.getElementById("btnScanUsbPrinters");
+      const usbPrintersList = document.getElementById("usbPrintersList");
+      const usbPrintersScanMsg = document.getElementById("usbPrintersScanMsg");
 
-      async function refreshOrderFlowStatus() {
-        try {
-          const data = await window.even.getOrderFlowStatus();
-          if (data && data.max_pending_orders !== null) {
-            orderFlowBar.style.display = "";
-            const warn = data.is_high_demand ? " ⚠️" : "";
-            orderFlowText.textContent = `Órdenes activas: ${data.active_count} / ${data.max_pending_orders}${warn}`;
-            orderFlowBar.style.background = data.is_high_demand ? "#3d1a1a" : "#1a1a2e";
-          } else if (data && data.active_count > 0) {
-            orderFlowBar.style.display = "";
-            orderFlowText.textContent = `Órdenes activas: ${data.active_count}`;
-            orderFlowBar.style.background = "#1a1a2e";
-          } else {
-            orderFlowBar.style.display = "none";
-          }
-        } catch {
-          // Silencioso — no bloquear UI si falla
+      function showUsbScanMsg(text, type) {
+        usbPrintersScanMsg.textContent = text;
+        usbPrintersScanMsg.className = "message " + type;
+        if (type !== "info") {
+          setTimeout(() => {
+            usbPrintersScanMsg.className = "message";
+          }, 4000);
         }
       }
 
-      // Pollear cada 10 segundos
-      setInterval(refreshOrderFlowStatus, 10_000);
+      btnScanUsbPrinters.addEventListener("click", async () => {
+        btnScanUsbPrinters.disabled = true;
+        btnScanUsbPrinters.textContent = "Detectando...";
+        usbPrintersList.classList.add("hidden");
+        showUsbScanMsg("Buscando impresoras USB...", "info");
+
+        try {
+          const result = await window.even.listUsbPrinters();
+          const printers = result.printers || [];
+
+          showUsbScanMsg(
+            printers.length > 0
+              ? `${printers.length} impresora(s) USB encontrada(s)`
+              : "Sin impresoras USB detectadas",
+            printers.length > 0 ? "success" : "error",
+          );
+
+          if (printers.length > 0) {
+            usbPrintersList.innerHTML = printers
+              .map(
+                (name) =>
+                  `<div class="printer-item"><span class="printer-ip">${name}</span></div>`,
+              )
+              .join("");
+            usbPrintersList.classList.remove("hidden");
+          }
+        } catch (err) {
+          showUsbScanMsg("Error: " + err.message, "error");
+        } finally {
+          btnScanUsbPrinters.disabled = false;
+          btnScanUsbPrinters.textContent = "Detectar USB";
+        }
+      });
 
       // ============================================
       // Initialize
@@ -636,7 +693,6 @@
       window.even.getStatus().then((s) => updateStatus(s.connected));
       window.even.getConfig().then(loadConfig);
       checkSqlStatus();
-      refreshOrderFlowStatus();
     </script>
   </body>
 </html>
