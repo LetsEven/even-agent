@@ -46,6 +46,10 @@ contextBridge.exposeInMainWorld("even", {
   scanPrinters: () => ipcRenderer.invoke("scan-printers"),
   listUsbPrinters: () => ipcRenderer.invoke("list-usb-printers"),
   reportPrinters: (printers) => ipcRenderer.invoke("report-printers", printers),
+  savePrinter: (data) => ipcRenderer.invoke("save-printer", data),
+  updatePrinter: (data) => ipcRenderer.invoke("update-printer", data),
+  deletePrinter: (data) => ipcRenderer.invoke("delete-printer", data),
+  testPrinter: (data) => ipcRenderer.invoke("test-printer", data),
 
   // Control de flujo de órdenes
   getOrderFlowStatus: () => ipcRenderer.invoke("get-order-flow-status"),
@@ -55,4 +59,6 @@ contextBridge.exposeInMainWorld("even", {
     ipcRenderer.on("load-config", (event, config) => callback(config)),
   onAgentStatus: (callback) =>
     ipcRenderer.on("agent-status", (event, status) => callback(status)),
+  onPrintersConfig: (callback) =>
+    ipcRenderer.on("printers-config", (event, printers) => callback(printers)),
 });

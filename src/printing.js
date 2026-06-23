@@ -1,4 +1,7 @@
 const net = require("net");
+const fs = require("fs");
+const path = require("path");
+const { PNG } = require("pngjs");
 const { getPool } = require("./database");
 const { printRawUsb } = require("./usbPrinters");
 
@@ -107,26 +110,50 @@ function ascii(str) {
 
 const SEPARATOR = "========================";
 
-// Mapa de rol → etiqueta del ticket
-const ROLE_LABEL = {
-  bar: "BARRA",
-  kitchen: "COCINA",
-  other: "OTROS",
-  all: "GENERAL",
-};
+const LOGO_PATH = path.join(__dirname, "..", "assets", "asterisk-black-print.png");
+let _logoBytesCache = null;
 
-// idarearestaurant → etiqueta legible
-const AREA_LABEL = {
-  "01": "COMEDOR",
-  "03": "RAPIDO",
-};
+async function getLogoBitmapBytes(targetWidth = 44) {
+  if (_logoBytesCache) return _logoBytesCache;
+  try {
+    const raw = fs.readFileSync(LOGO_PATH);
+    const png = PNG.sync.read(raw);
+    const scale = targetWidth / png.width;
+    const w = targetWidth;
+    const h = Math.round(png.height * scale);
+    const bytesPerRow = Math.ceil(w / 8);
+    const bitmap = [];
+    for (let y = 0; y < h; y++) {
+      for (let bx = 0; bx < bytesPerRow; bx++) {
+        let byte = 0;
+        for (let bit = 0; bit < 8; bit++) {
+          const x = bx * 8 + bit;
+          if (x < w) {
+            const srcX = Math.floor(x / scale);
+            const srcY = Math.floor(y / scale);
+            const idx = (srcY * png.width + Math.min(srcX, png.width - 1)) * 4;
+            const luma = 0.299 * png.data[idx] + 0.587 * png.data[idx + 1] + 0.114 * png.data[idx + 2];
+            if (luma < 128) byte |= 1 << (7 - bit);
+          }
+        }
+        bitmap.push(byte);
+      }
+    }
+    const xL = bytesPerRow & 0xff;
+    const xH = (bytesPerRow >> 8) & 0xff;
+    const yL = h & 0xff;
+    const yH = (h >> 8) & 0xff;
+    _logoBytesCache = Buffer.from([0x1d, 0x76, 0x30, 0x00, xL, xH, yL, yH, ...bitmap]);
+    return _logoBytesCache;
+  } catch {
+    return null;
+  }
+}
 
 // Genera el buffer ESC/POS para un ticket de producción.
-function buildTicket({
+async function buildTicket({
   role,
   mesa,
-  idarearestaurant,
-  orden,
   nopersonas,
   mesero,
   items,
@@ -135,53 +162,36 @@ function buildTicket({
   identifier,
   orderedBy = null,
 }) {
-  const areaLabel = AREA_LABEL[idarearestaurant] || "COMEDOR";
-
   const now = new Date();
   const fecha =
-    now.toLocaleDateString("es-MX", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    }) +
-    " " +
-    now.toLocaleTimeString("es-MX", {
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-    });
+    `${String(now.getDate()).padStart(2, "0")}/${String(now.getMonth() + 1).padStart(2, "0")}/${now.getFullYear()} ` +
+    `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}:${String(now.getSeconds()).padStart(2, "0")}`;
 
+  const ordenLabel = formatFolio(folio);
   const buf = [];
 
-  // 1. Init + centrar
+  // Init + center
   buf.push(init());
   buf.push(alignCenter());
 
-  // 2. Header centrado: doble ancho+alto
+  // Header: MESA XX (double size)
   buf.push(doubleSize());
   const mesaNum = identifier
     ? identifier.match(/\d+/)?.[0]
     : String(mesa).padStart(2, "0");
-  const mesaHeader = `MESA ${mesaNum ? String(mesaNum).padStart(2, "0") : identifier || mesa}`;
-  buf.push(ascii(`${mesaHeader}\n`));
+  buf.push(ascii(`MESA ${mesaNum ? String(mesaNum).padStart(2, "0") : identifier || mesa}\n`));
 
-  // 2c. Nombre del comensal (si existe), mismo tamaño centrado
   if (orderedBy) {
     buf.push(ascii(`${orderedBy.toUpperCase()}\n`));
   }
 
-  // 3. Resto alineado izquierda, texto normal
+  // Align left + height x2 for date/mesa section
   buf.push(alignLeft());
-  buf.push(normalSize());
+  buf.push(Buffer.from([GS, 0x21, 0x01]));
 
-  // 4. Línea destino + orden
-  const ordenLabel = formatFolio(folio);
-  buf.push(ascii(`\n(${areaLabel}) ORDEN: ${ordenLabel}\n`));
-
-  // 5. Fecha
+  buf.push(ascii(`\nNUMERO DE ORDEN: ${ordenLabel}\n`));
   buf.push(ascii(`${fecha}\n`));
 
-  // 6. Mesa / Habitación / Pick & Go
   if (identifier) {
     const num = identifier.match(/\d+/)?.[0];
     if (/habitaci/i.test(identifier) || /cuarto/i.test(identifier)) {
@@ -189,48 +199,48 @@ function buildTicket({
     } else if (/pick/i.test(identifier)) {
       buf.push(ascii(`MESERO: EVEN\n\n`));
     } else {
-      // Mesa
-      const mesaLabel = num ? String(num).padStart(2, "0") : identifier;
-      buf.push(ascii(`MESA: ${mesaLabel} MESERO: EVEN\n\n`));
+      buf.push(ascii(`MESA: ${num ? String(num).padStart(2, "0") : identifier} MESERO: EVEN\n\n`));
     }
   } else {
-    // Formato SR POS: "MESA: 05 - PERSONAS:3 MESERO: JUAN"
     const meseroLabel = mesero ? `MESERO: ${mesero}` : "MESERO: EVEN";
-    buf.push(
-      ascii(
-        `MESA: ${String(mesa).padStart(2, "0")} - PERSONAS:${nopersonas} ${meseroLabel}\n`.trimEnd() +
-          "\n",
-      ),
-    );
+    buf.push(ascii(`MESA: ${String(mesa).padStart(2, "0")} - PERSONAS:${nopersonas} ${meseroLabel}\n\n`));
   }
 
-  // 7. Separador + items
-  buf.push(ascii(`${SEPARATOR}\n`));
-  for (const item of items) {
-    const qty = Math.round(Number(item.cantidad));
-    const nombre = (
-      item.nombre ||
-      item.name ||
-      item.idproducto ||
-      "???"
-    ).toUpperCase();
-    buf.push(ascii(`${qty} ${nombre}\n`));
-    if (item.comment) {
-      buf.push(ascii(`  ** ${item.comment.toUpperCase()} **\n`));
-    }
-  }
-
-  // 8. Separador final
   buf.push(ascii(`${SEPARATOR}\n`));
 
-  // 9. Notas (si hay)
-  if (notas) {
-    buf.push(ascii(`NOTA: ${notas}\n`));
+  // Notes before items (matches crew format)
+  if (notas && notas.trim()) {
+    buf.push(ascii(`COMENTARIO: ${notas.trim().toUpperCase()}\n`));
     buf.push(ascii(`${SEPARATOR}\n`));
   }
 
-  // 10. Feed + corte
-  buf.push(feedAndCut());
+  // Items with custom fields
+  for (const item of items) {
+    const qty = Math.round(Number(item.cantidad));
+    const nombre = (item.nombre || item.name || item.idproducto || "???").toUpperCase();
+    buf.push(ascii(`${qty} ${nombre}\n`));
+    if (item.custom_fields) {
+      for (const field of item.custom_fields) {
+        const opts = (field.selectedOptions || []).map((o) => o.optionName).join(", ");
+        if (opts) buf.push(ascii(`  ${field.fieldName}: ${opts}\n`));
+      }
+    }
+    if (item.special_instructions) {
+      buf.push(ascii(`  Nota: ${item.special_instructions}\n`));
+    }
+  }
+
+  buf.push(ascii(`${SEPARATOR}\n`));
+
+  // Reset size + center + logo + 6 feeds + cut
+  buf.push(normalSize());
+  buf.push(alignCenter());
+  const logo = await getLogoBitmapBytes();
+  if (logo) {
+    buf.push(Buffer.from([0x0a]));
+    buf.push(logo);
+  }
+  buf.push(Buffer.from([0x0a, 0x0a, 0x0a, 0x0a, 0x0a, 0x0a, GS, 0x56, 0x00]));
 
   return Buffer.concat(buf);
 }
@@ -290,7 +300,6 @@ async function printOrderTickets(orderData, rawOrder, folio) {
       idproducto: item.idproducto,
       nombre: rawItem.name || item.idproducto,
       cantidad: item.cantidad,
-      comment: item.comment || "",
       clasificacion,
     };
   });
@@ -314,11 +323,9 @@ async function printOrderTickets(orderData, rawOrder, folio) {
 
     if (items.length === 0) continue;
 
-    const ticketBuf = buildTicket({
+    const ticketBuf = await buildTicket({
       role,
       mesa: orderData.mesa,
-      idarearestaurant: orderData.idarearestaurant || "01",
-      orden: folio,
       folio,
       nopersonas: orderData.nopersonas || 1,
       mesero: orderData.idmesero || "",
@@ -380,7 +387,8 @@ async function printJobFromBackend({ items, orderInfo }) {
       byRole.get(role).push({
         nombre: item.name,
         cantidad: item.quantity,
-        comment: "",
+        custom_fields: item.custom_fields || null,
+        special_instructions: item.special_instructions || null,
       });
     }
   }
@@ -392,12 +400,11 @@ async function printJobFromBackend({ items, orderInfo }) {
     const printerItems = byRole.get(role) || [];
     if (printerItems.length === 0) continue;
 
-    const ticketBuf = buildTicket({
+    const ticketBuf = await buildTicket({
       role,
       identifier,
-      idarearestaurant: "01",
       items: printerItems,
-      notas: "",
+      notas: orderInfo?.notes ?? "",
       folio: orderInfo?.folio ?? null,
       orderedBy: orderInfo?.orderedBy ?? null,
     });

@@ -9,22 +9,14 @@ const path = require("path");
 
 function listLocalPrinters() {
   return new Promise((resolve, reject) => {
-    const script = `
-$names = [System.Collections.Generic.List[string]]::new()
-try { Get-WmiObject Win32_Printer | ForEach-Object { $names.Add($_.Name) } } catch {}
-try {
-  Get-PnpDevice -Class Printer -ErrorAction SilentlyContinue | ForEach-Object {
-    if ($_.FriendlyName -and -not $names.Contains($_.FriendlyName)) { $names.Add($_.FriendlyName) }
-  }
-} catch {}
-$names | Where-Object { $_ -ne $null -and $_.Trim() -ne '' }
-`;
+    const script = `try { Get-Printer | Select-Object -ExpandProperty Name } catch { Get-WmiObject Win32_Printer | Select-Object -ExpandProperty Name }`;
+    const encoded = Buffer.from(script, "utf16le").toString("base64");
     execFile(
       "powershell",
-      ["-NoProfile", "-NonInteractive", "-Command", script],
+      ["-NoProfile", "-NonInteractive", "-EncodedCommand", encoded],
       { timeout: 10000, windowsHide: true },
       (err, stdout, stderr) => {
-        if (err) return reject(new Error(stderr || err.message));
+        if (err) return reject(new Error(stderr.trim() || err.message));
         const names = stdout
           .split(/\r?\n/)
           .map((l) => l.trim())

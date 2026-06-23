@@ -4,7 +4,7 @@
   "description": "Agente de sincronizacion Even - Soft Restaurant",
   "main": "src/main.js",
   "scripts": {
-    "start": "electron .",
+    "start": "node start.js",
     "build": "electron-builder --win"
   },
   "author": "Even",
@@ -12,6 +12,7 @@
   "dependencies": {
     "electron-store": "^8.1.0",
     "mssql": "^10.0.4",
+    "pngjs": "^7.0.0",
     "socket.io-client": "^4.8.3"
   },
   "devDependencies": {
@@ -24,7 +25,9 @@
     "icon": "assets/icon-white.ico",
     "win": {
       "target": "portable",
-      "signAndEditExecutable": false,
+      "signAndEditExecutable": true,
+      "certificateFile": "certs/even-codesign.pfx",
+      "certificatePassword": "even2026",
       "artifactName": "Even Agent.${ext}",
       "icon": "assets/icon-white.ico"
     },

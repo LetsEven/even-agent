@@ -53,6 +53,7 @@ const { setupSyncHandlers } = require("./sync");
 const {
   discoverPrinters,
   listLocalPrinters,
+  printTestTicket,
   setupPrinterHandlers,
   setupPrinterTestHandler,
   setupUsbPrinterHandlers,
@@ -411,6 +412,9 @@ async function startAgent() {
         `[PRINT] Configuración recibida: ${data.printers?.length || 0} impresora(s)`,
       );
       setPrinters(data.printers || []);
+      if (mainWindow && mainWindow.webContents) {
+        mainWindow.webContents.send("printers-config", data.printers || []);
+      }
     });
 
     // Trabajo de impresión desde backend (FlexBill, Tap, Room, Pick&Go)
@@ -752,6 +756,60 @@ ipcMain.handle("report-printers", async (event, printers) => {
     }
     return { success: true };
   } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle("save-printer", async (event, data) => {
+  try {
+    if (syncSocket && syncSocket.connected) {
+      syncSocket.emit("save_printer", data);
+    }
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle("update-printer", async (event, data) => {
+  try {
+    if (syncSocket && syncSocket.connected) {
+      syncSocket.emit("update_printer", data);
+    }
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle("delete-printer", async (event, data) => {
+  try {
+    if (syncSocket && syncSocket.connected) {
+      syncSocket.emit("delete_printer", data);
+    }
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle("test-printer", async (event, { connection_type, ip, port, usb_device_name }) => {
+  try {
+    if (connection_type === "usb") {
+      console.log(`[PRINT] Test USB → ${usb_device_name}`);
+      const { buildTestTicketUsb } = require("./printing");
+      const { printRawUsb } = require("./usbPrinters");
+      const ticket = buildTestTicketUsb(usb_device_name);
+      await printRawUsb(usb_device_name, ticket);
+      console.log(`[PRINT] Test USB OK → ${usb_device_name}`);
+    } else {
+      console.log(`[PRINT] Test WiFi → ${ip}:${port || 9100}`);
+      await printTestTicket(ip, port || 9100);
+      console.log(`[PRINT] Test WiFi OK → ${ip}`);
+    }
+    return { success: true };
+  } catch (error) {
+    console.error(`[PRINT] Test error: ${error.message}`);
     return { success: false, error: error.message };
   }
 });

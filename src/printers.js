@@ -283,6 +283,7 @@ function setupUsbPrinterHandlers(syncSocket) {
 module.exports = {
   discoverPrinters,
   listLocalPrinters,
+  printTestTicket,
   setupPrinterHandlers,
   setupPrinterTestHandler,
   setupUsbPrinterHandlers,
