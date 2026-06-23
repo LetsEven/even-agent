@@ -4,6 +4,9 @@ node_modules/
 # Config con credenciales
 config.json
 
+# Certificados
+certs/
+
 # Build
 dist/
 *.exe
