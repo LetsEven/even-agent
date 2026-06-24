@@ -15,103 +15,111 @@
   <body>
     <div class="container">
       <div class="header">
-      <div class="logo">
-        <div class="logo-icon">
-          <img src="https://www.letseven.io/assets/even/asterisk-grass.png" alt="Even" />
-        </div>
-        <h1>agent</h1>
-        <p>Sincronizacion con Soft Restaurant</p>
-      </div>
-
-      <div id="statusBar" class="status-bar disconnected">
-        <span class="status-dot"></span>
-        <span id="statusText">Desconectado</span>
-      </div>
-
-      </div><!-- /header -->
-      <div class="card-body">
-      <form id="configForm">
-        <div class="section-title">Even Cloud</div>
-
-        <div class="form-group">
-          <label>Branch ID</label>
-          <input
-            type="text"
-            id="branchId"
-            placeholder="UUID de tu sucursal"
-            required
-          />
-        </div>
-
-        <div class="form-group">
-          <label>Sync Token</label>
-          <input
-            type="text"
-            id="syncToken"
-            placeholder="Token del dashboard"
-            required
-          />
-        </div>
-
-        <div class="section-title">SQL Server</div>
-
-        <!-- SQL Status Card -->
-        <div id="sqlStatusCard" class="sql-status">
-          <div class="sql-status-main">
-            <div id="sqlStatusIcon" class="sql-status-icon not-configured">?</div>
-            <div class="sql-status-info">
-              <h3 id="sqlStatusTitle">No configurado</h3>
-              <p id="sqlStatusDesc">Haz clic para configurar</p>
-            </div>
+        <div class="logo">
+          <div class="logo-icon">
+            <img
+              src="https://www.letseven.io/assets/even/asterisk-grass.png"
+              alt="Even"
+            />
           </div>
-          <button
-            type="button"
-            id="btnConfigureSql"
-            class="btn btn-primary btn-small"
-          >
-            Configurar
-          </button>
+          <h1>agent</h1>
+          <p>Sincronizacion con Soft Restaurant</p>
         </div>
 
-        <!-- Hidden inputs for SQL config (used internally) -->
-        <input type="hidden" id="sqlHost" value="localhost\SQLEXPRESS" />
-        <input type="hidden" id="sqlDatabase" value="softrestaurant10" />
-
-        <div class="buttons">
-          <button type="submit" class="btn btn-primary">
-            Guardar y Conectar
-          </button>
+        <div id="statusBar" class="status-bar disconnected">
+          <span class="status-dot"></span>
+          <span id="statusText">Desconectado</span>
         </div>
-      </form>
+      </div>
+      <!-- /header -->
+      <div class="card-body">
+        <form id="configForm">
+          <div class="section-title">Even Cloud</div>
 
-      <div id="message" class="message"></div>
+          <div class="form-group">
+            <label>Branch ID</label>
+            <input
+              type="text"
+              id="branchId"
+              placeholder="UUID de tu sucursal"
+              required
+            />
+          </div>
 
-      <!-- Impresoras WiFi -->
-      <div class="section-title" style="margin-top: 16px">Impresoras WiFi</div>
-      <button
-        id="btnScanPrinters"
-        type="button"
-        class="btn btn-secondary"
-        style="margin-bottom: 8px"
-      >
-        Escanear red
-      </button>
-      <div id="wifiScanMsg" class="message"></div>
-      <div id="wifiPrintersList" class="printers-list"></div>
+          <div class="form-group">
+            <label>Sync Token</label>
+            <input
+              type="text"
+              id="syncToken"
+              placeholder="Token del dashboard"
+              required
+            />
+          </div>
 
-      <!-- Impresoras USB -->
-      <div class="section-title" style="margin-top: 16px">Impresoras USB</div>
-      <button
-        id="btnScanUsbPrinters"
-        type="button"
-        class="btn btn-secondary"
-        style="margin-bottom: 8px"
-      >
-        Detectar USB
-      </button>
-      <div id="usbScanMsg" class="message"></div>
-      <div id="usbPrintersList" class="printers-list"></div>
-      </div><!-- /card-body -->
+          <div class="section-title">SQL Server</div>
+
+          <!-- SQL Status Card -->
+          <div id="sqlStatusCard" class="sql-status">
+            <div class="sql-status-main">
+              <div id="sqlStatusIcon" class="sql-status-icon not-configured">
+                ?
+              </div>
+              <div class="sql-status-info">
+                <h3 id="sqlStatusTitle">No configurado</h3>
+                <p id="sqlStatusDesc">Haz clic para configurar</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              id="btnConfigureSql"
+              class="btn btn-primary btn-small"
+            >
+              Configurar
+            </button>
+          </div>
+
+          <!-- Hidden inputs for SQL config (used internally) -->
+          <input type="hidden" id="sqlHost" value="localhost\SQLEXPRESS" />
+          <input type="hidden" id="sqlDatabase" value="softrestaurant10" />
+
+          <div class="buttons">
+            <button type="submit" class="btn btn-primary">
+              Guardar y Conectar
+            </button>
+          </div>
+        </form>
+
+        <div id="message" class="message"></div>
+
+        <!-- Impresoras WiFi -->
+        <div class="section-title" style="margin-top: 16px">
+          Impresoras WiFi
+        </div>
+        <button
+          id="btnScanPrinters"
+          type="button"
+          class="btn btn-secondary"
+          style="margin-bottom: 8px"
+        >
+          Escanear red
+        </button>
+        <div id="wifiScanMsg" class="message"></div>
+        <div id="wifiPrintersList" class="printers-list"></div>
+
+        <!-- Impresoras USB -->
+        <div class="section-title" style="margin-top: 16px">Impresoras USB</div>
+        <button
+          id="btnScanUsbPrinters"
+          type="button"
+          class="btn btn-secondary"
+          style="margin-bottom: 8px"
+        >
+          Detectar USB
+        </button>
+        <div id="usbScanMsg" class="message"></div>
+        <div id="usbPrintersList" class="printers-list"></div>
+      </div>
+      <!-- /card-body -->
     </div>
 
     <!-- SQL Onboarding Modal -->
@@ -160,32 +168,14 @@
             </p>
             <p id="discoverySource" style="color: #299e66; font-size: 10px"></p>
           </div>
-          <div
-            id="vpnOption"
-            class="hidden"
-            style="
-              margin-bottom: 12px;
-              padding: 10px;
-              background: rgba(195, 254, 255, 0.6);
-              border-radius: 4px;
-              border: 1px solid rgba(41, 158, 102, 0.4);
-            "
-          >
-            <p
-              style="
-                color: #023828;
-                font-size: 11px;
-                margin-bottom: 6px;
-                font-weight: 500;
-              "
-            >
+          <div id="vpnOption" class="hidden" style="margin-bottom: 12px">
+            <label style="display: flex; align-items: center; gap: 5px">
               &#128274; VPN detectada
-            </p>
+            </label>
             <button
               type="button"
               id="btnUseVpn"
-              class="btn btn-secondary btn-small"
-              style="width: 100%"
+              class="btn btn-primary"
             ></button>
           </div>
           <div class="form-group">
@@ -408,7 +398,7 @@
               detectedVpnIp = discovery.vpnIp;
               document.getElementById("vpnOption").classList.remove("hidden");
               document.getElementById("btnUseVpn").textContent =
-                `Usar IP VPN: ${discovery.vpnIp}`;
+                `Usar IP VPN: ${discovery.vpnIp} →`;
             } else {
               document.getElementById("vpnOption").classList.add("hidden");
             }
@@ -584,10 +574,10 @@
       // ============================================
 
       const ROLES = [
-        { value: "bar",     label: "Barra" },
+        { value: "bar", label: "Barra" },
         { value: "kitchen", label: "Cocina" },
-        { value: "other",   label: "Otros" },
-        { value: "all",     label: "Todos" },
+        { value: "other", label: "Otros" },
+        { value: "all", label: "Todos" },
       ];
 
       let savedPrinters = [];
@@ -607,28 +597,37 @@
       function showMsg(el, text, type) {
         el.textContent = text;
         el.className = "message " + type;
-        if (type !== "info") setTimeout(() => { el.className = "message"; }, 4000);
+        if (type !== "info")
+          setTimeout(() => {
+            el.className = "message";
+          }, 4000);
       }
 
       function esc(s) {
-        return String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+        return String(s ?? "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;");
       }
 
       function roleBtns(currentRole, prefix) {
-        return ROLES.map(r =>
-          `<button class="role-btn${currentRole === r.value ? " active" : ""}" data-role="${r.value}" data-prefix="${prefix}">${r.label}</button>`
+        return ROLES.map(
+          (r) =>
+            `<button class="role-btn${currentRole === r.value ? " active" : ""}" data-role="${r.value}" data-prefix="${prefix}">${r.label}</button>`,
         ).join("");
       }
 
       function renderWifi() {
-        const wifi = savedPrinters.filter(p => p.connection_type !== "usb");
+        const wifi = savedPrinters.filter((p) => p.connection_type !== "usb");
         if (wifi.length === 0) {
           wifiListEl.innerHTML = "";
           return;
         }
-        wifiListEl.innerHTML = wifi.map(p => {
-          if (editingId === p.id) {
-            return `<div class="printer-item printer-item-editing" data-id="${esc(p.id)}">
+        wifiListEl.innerHTML = wifi
+          .map((p) => {
+            if (editingId === p.id) {
+              return `<div class="printer-item printer-item-editing" data-id="${esc(p.id)}">
               <input class="edit-name-input" id="editNameInput" type="text" value="${esc(editName)}" placeholder="Nombre (opcional)" />
               <div class="role-buttons">${roleBtns(editRole, "wifi")}</div>
               <div class="edit-actions">
@@ -636,10 +635,14 @@
                 <button class="btn btn-secondary btn-sm" id="btnCancelEdit">Cancelar</button>
               </div>
             </div>`;
-          }
-          const label = p.ip ? `${esc(p.name || p.ip)}` : esc(p.name || "Sin nombre");
-          const sub = p.ip ? `:${p.port}${p.role ? " · " + p.role : ""}` : (p.role || "");
-          return `<div class="printer-item" data-id="${esc(p.id)}">
+            }
+            const label = p.ip
+              ? `${esc(p.name || p.ip)}`
+              : esc(p.name || "Sin nombre");
+            const sub = p.ip
+              ? `:${p.port}${p.role ? " · " + p.role : ""}`
+              : p.role || "";
+            return `<div class="printer-item" data-id="${esc(p.id)}">
             <div class="printer-info">
               <span class="printer-name">${label}</span>
               ${sub ? `<span class="printer-sub">${esc(sub)}</span>` : ""}
@@ -650,20 +653,22 @@
               <button class="btn-icon btn-icon-danger btn-delete" data-id="${esc(p.id)}" title="Eliminar">✕</button>
             </div>
           </div>`;
-        }).join("");
+          })
+          .join("");
         attachWifiEvents();
       }
 
       function renderUsb() {
-        const usb = savedPrinters.filter(p => p.connection_type === "usb");
-        const savedNames = new Set(usb.map(p => p.usb_device_name));
-        const newDevices = detectedUsb.filter(d => !savedNames.has(d));
+        const usb = savedPrinters.filter((p) => p.connection_type === "usb");
+        const savedNames = new Set(usb.map((p) => p.usb_device_name));
+        const newDevices = detectedUsb.filter((d) => !savedNames.has(d));
 
         let html = "";
 
-        html += usb.map(p => {
-          if (editingId === p.id) {
-            return `<div class="printer-item printer-item-editing" data-id="${esc(p.id)}">
+        html += usb
+          .map((p) => {
+            if (editingId === p.id) {
+              return `<div class="printer-item printer-item-editing" data-id="${esc(p.id)}">
               <input class="edit-name-input" id="editNameInput" type="text" value="${esc(editName)}" placeholder="Nombre (opcional)" />
               <div class="role-buttons">${roleBtns(editRole, "usb")}</div>
               <div class="edit-actions">
@@ -671,10 +676,10 @@
                 <button class="btn btn-secondary btn-sm" id="btnCancelEdit">Cancelar</button>
               </div>
             </div>`;
-          }
-          const label = p.name || p.usb_device_name || "Sin nombre";
-          const sub = p.role || "";
-          return `<div class="printer-item" data-id="${esc(p.id)}">
+            }
+            const label = p.name || p.usb_device_name || "Sin nombre";
+            const sub = p.role || "";
+            return `<div class="printer-item" data-id="${esc(p.id)}">
             <div class="printer-info">
               <span class="printer-name">${esc(label)}</span>
               ${sub ? `<span class="printer-sub">${esc(sub)}</span>` : ""}
@@ -685,13 +690,15 @@
               <button class="btn-icon btn-icon-danger btn-delete" data-id="${esc(p.id)}" title="Eliminar">✕</button>
             </div>
           </div>`;
-        }).join("");
+          })
+          .join("");
 
         if (newDevices.length > 0) {
           html += `<div class="printer-new-label">Detectadas — asigna rol para guardar</div>`;
-          html += newDevices.map(d => {
-            if (savingDevice === d) {
-              return `<div class="printer-item printer-item-new printer-item-saving" data-device="${esc(d)}">
+          html += newDevices
+            .map((d) => {
+              if (savingDevice === d) {
+                return `<div class="printer-item printer-item-new printer-item-saving" data-device="${esc(d)}">
                 <div class="device-label">${esc(d)}</div>
                 <input class="edit-name-input" id="newUsbNameInput" type="text" value="${esc(newUsbName)}" placeholder="Nombre (opcional)" />
                 <div class="role-buttons">${roleBtns(newUsbRole, "new")}</div>
@@ -700,15 +707,16 @@
                   <button class="btn btn-secondary btn-sm" id="btnCancelSave">Cancelar</button>
                 </div>
               </div>`;
-            }
-            return `<div class="printer-item printer-item-new" data-device="${esc(d)}">
+              }
+              return `<div class="printer-item printer-item-new" data-device="${esc(d)}">
               <div class="printer-info">
                 <span class="printer-name">${esc(d)}</span>
                 <span class="printer-sub">USB · No guardada</span>
               </div>
               <button class="btn-icon btn-start-save" data-device="${esc(d)}" title="Guardar">+</button>
             </div>`;
-          }).join("");
+            })
+            .join("");
         }
 
         usbListEl.innerHTML = html;
@@ -727,18 +735,24 @@
             usb_device_name: btn.dataset.device || undefined,
           });
           btn.textContent = result.success ? "✓" : "✕";
-          setTimeout(() => { btn.textContent = prev; btn.disabled = false; }, 2000);
+          setTimeout(() => {
+            btn.textContent = prev;
+            btn.disabled = false;
+          }, 2000);
         } catch {
           btn.textContent = "✕";
-          setTimeout(() => { btn.textContent = prev; btn.disabled = false; }, 2000);
+          setTimeout(() => {
+            btn.textContent = prev;
+            btn.disabled = false;
+          }, 2000);
         }
       }
 
       function attachWifiEvents() {
-        wifiListEl.querySelectorAll(".btn-test").forEach(btn => {
+        wifiListEl.querySelectorAll(".btn-test").forEach((btn) => {
           btn.addEventListener("click", () => testPrinter(btn));
         });
-        wifiListEl.querySelectorAll(".btn-edit").forEach(btn => {
+        wifiListEl.querySelectorAll(".btn-edit").forEach((btn) => {
           btn.addEventListener("click", () => {
             editingId = btn.dataset.id;
             editName = btn.dataset.name;
@@ -748,25 +762,35 @@
             renderUsb();
           });
         });
-        wifiListEl.querySelectorAll(".btn-delete").forEach(btn => {
+        wifiListEl.querySelectorAll(".btn-delete").forEach((btn) => {
           btn.addEventListener("click", () => deletePrinter(btn.dataset.id));
         });
         const saveBtn = wifiListEl.querySelector("#btnSaveEdit");
         if (saveBtn) saveBtn.addEventListener("click", () => commitEdit());
         const cancelBtn = wifiListEl.querySelector("#btnCancelEdit");
-        if (cancelBtn) cancelBtn.addEventListener("click", () => { editingId = null; renderWifi(); });
-        wifiListEl.querySelectorAll(".role-btn").forEach(btn => {
-          btn.addEventListener("click", () => { editRole = btn.dataset.role; renderWifi(); });
+        if (cancelBtn)
+          cancelBtn.addEventListener("click", () => {
+            editingId = null;
+            renderWifi();
+          });
+        wifiListEl.querySelectorAll(".role-btn").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            editRole = btn.dataset.role;
+            renderWifi();
+          });
         });
         const nameInput = wifiListEl.querySelector("#editNameInput");
-        if (nameInput) nameInput.addEventListener("input", e => { editName = e.target.value; });
+        if (nameInput)
+          nameInput.addEventListener("input", (e) => {
+            editName = e.target.value;
+          });
       }
 
       function attachUsbEvents() {
-        usbListEl.querySelectorAll(".btn-test").forEach(btn => {
+        usbListEl.querySelectorAll(".btn-test").forEach((btn) => {
           btn.addEventListener("click", () => testPrinter(btn));
         });
-        usbListEl.querySelectorAll(".btn-edit").forEach(btn => {
+        usbListEl.querySelectorAll(".btn-edit").forEach((btn) => {
           btn.addEventListener("click", () => {
             editingId = btn.dataset.id;
             editName = btn.dataset.name;
@@ -776,15 +800,20 @@
             renderUsb();
           });
         });
-        usbListEl.querySelectorAll(".btn-delete").forEach(btn => {
+        usbListEl.querySelectorAll(".btn-delete").forEach((btn) => {
           btn.addEventListener("click", () => deletePrinter(btn.dataset.id));
         });
         const saveEditBtn = usbListEl.querySelector("#btnSaveEdit");
-        if (saveEditBtn) saveEditBtn.addEventListener("click", () => commitEdit());
+        if (saveEditBtn)
+          saveEditBtn.addEventListener("click", () => commitEdit());
         const cancelEditBtn = usbListEl.querySelector("#btnCancelEdit");
-        if (cancelEditBtn) cancelEditBtn.addEventListener("click", () => { editingId = null; renderUsb(); });
+        if (cancelEditBtn)
+          cancelEditBtn.addEventListener("click", () => {
+            editingId = null;
+            renderUsb();
+          });
 
-        usbListEl.querySelectorAll(".btn-start-save").forEach(btn => {
+        usbListEl.querySelectorAll(".btn-start-save").forEach((btn) => {
           btn.addEventListener("click", () => {
             savingDevice = btn.dataset.device;
             newUsbName = "";
@@ -809,9 +838,13 @@
           });
         }
         const cancelSaveBtn = usbListEl.querySelector("#btnCancelSave");
-        if (cancelSaveBtn) cancelSaveBtn.addEventListener("click", () => { savingDevice = null; renderUsb(); });
+        if (cancelSaveBtn)
+          cancelSaveBtn.addEventListener("click", () => {
+            savingDevice = null;
+            renderUsb();
+          });
 
-        usbListEl.querySelectorAll(".role-btn").forEach(btn => {
+        usbListEl.querySelectorAll(".role-btn").forEach((btn) => {
           btn.addEventListener("click", () => {
             if (btn.dataset.prefix === "new") {
               newUsbRole = btn.dataset.role;
@@ -822,13 +855,23 @@
           });
         });
         const nameInput = usbListEl.querySelector("#editNameInput");
-        if (nameInput) nameInput.addEventListener("input", e => { editName = e.target.value; });
+        if (nameInput)
+          nameInput.addEventListener("input", (e) => {
+            editName = e.target.value;
+          });
         const newNameInput = usbListEl.querySelector("#newUsbNameInput");
-        if (newNameInput) newNameInput.addEventListener("input", e => { newUsbName = e.target.value; });
+        if (newNameInput)
+          newNameInput.addEventListener("input", (e) => {
+            newUsbName = e.target.value;
+          });
       }
 
       async function commitEdit() {
-        await window.even.updatePrinter({ printerId: editingId, name: editName || null, role: editRole || null });
+        await window.even.updatePrinter({
+          printerId: editingId,
+          name: editName || null,
+          role: editRole || null,
+        });
         editingId = null;
       }
 
