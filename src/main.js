@@ -690,10 +690,16 @@ function showWindow() {
   if (!mainWindow) createWindow();
 
   const config = getConfig();
-  mainWindow.webContents.once("did-finish-load", () => {
+  const sendConfig = () => {
     mainWindow.webContents.send("load-config", config);
     mainWindow.webContents.send("agent-status", { connected: isConnected });
-  });
+  };
+
+  if (mainWindow.webContents.isLoading()) {
+    mainWindow.webContents.once("did-finish-load", sendConfig);
+  } else {
+    sendConfig();
+  }
 
   mainWindow.show();
   mainWindow.focus();
@@ -1014,12 +1020,12 @@ app.on("ready", () => {
   if (app.isPackaged) {
     app.setLoginItemSettings({
       openAtLogin: true,
-      path: process.execPath,
+      path: process.env.PORTABLE_EXECUTABLE_FILE || process.execPath,
     });
   }
 
   if (configExists()) {
-    startAgent();
+    setTimeout(startAgent, 5000);
   }
 });
 
