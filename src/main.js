@@ -354,7 +354,20 @@ async function startAgent() {
   console.log("[AGENT] Iniciando...");
 
   try {
-    await connectSqlServer(config);
+    let sqlConnected = false;
+    for (let attempt = 1; attempt <= 12 && !sqlConnected; attempt++) {
+      try {
+        await connectSqlServer(config);
+        sqlConnected = true;
+      } catch (sqlErr) {
+        console.warn(`[SQL] Intento ${attempt}/12 fallido: ${sqlErr.message}`);
+        if (attempt < 12) {
+          await new Promise((r) => setTimeout(r, 5000));
+        } else {
+          throw sqlErr;
+        }
+      }
+    }
 
     // Turno check — solo informativo, no bloquea la conexión
     try {
