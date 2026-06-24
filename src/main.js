@@ -74,6 +74,7 @@ let isQuitting = false;
 // Agent state
 let syncSocket = null;
 let pingInterval = null;
+let lastKnownTurnoOpen = null;
 let currentConfig = null;
 
 // ============================================
@@ -355,12 +356,19 @@ async function startAgent() {
   try {
     await connectSqlServer(config);
 
-    const turno = await getActiveTurno();
-    console.log(
-      turno
-        ? `[SQL] Turno activo: ${turno.idturno}`
-        : "[SQL] No hay turno abierto",
-    );
+    // Turno check — solo informativo, no bloquea la conexión
+    try {
+      const turno = await getActiveTurno();
+      console.log(
+        turno
+          ? `[SQL] Turno activo: ${turno.idturno}`
+          : "[SQL] No hay turno abierto",
+      );
+    } catch (turnoErr) {
+      console.warn(
+        `[SQL] No se pudo verificar turno al iniciar: ${turnoErr.message}`,
+      );
+    }
 
     // WebSocket connection
     const wsUrl = config.even.wsUrl.replace("/sync", "");
@@ -403,8 +411,33 @@ async function startAgent() {
       }
     }
 
-    syncSocket.on("register_ack", (data) => {
+    syncSocket.on("register_ack", async (data) => {
       console.log("[WS] Registrado:", data.message || "OK");
+      let turnoOpen = false;
+      try {
+        const turno = await getActiveTurno();
+        turnoOpen = !!turno;
+      } catch {
+        turnoOpen = false;
+      }
+      lastKnownTurnoOpen = turnoOpen;
+      if (syncSocket && syncSocket.connected) {
+        syncSocket.emit("turno_status", { open: turnoOpen });
+        console.log(`[WS] turno_status emitido: open=${turnoOpen}`);
+      }
+    });
+
+    syncSocket.on("check_turno", async (callback) => {
+      let open = false;
+      try {
+        const turno = await getActiveTurno();
+        open = !!turno;
+      } catch {
+        open = false;
+      }
+      lastKnownTurnoOpen = open;
+      syncSocket.emit("turno_status", { open });
+      callback({ open });
     });
 
     syncSocket.on("printers_config", (data) => {
@@ -526,8 +559,12 @@ function createTrayIcon(connected) {
   const halfWidth = 3.2;
 
   function distToSegment(px, py, ax, ay, bx, by) {
-    const dx = bx - ax, dy = by - ay;
-    const t = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / (dx * dx + dy * dy)));
+    const dx = bx - ax,
+      dy = by - ay;
+    const t = Math.max(
+      0,
+      Math.min(1, ((px - ax) * dx + (py - ay) * dy) / (dx * dx + dy * dy)),
+    );
     return Math.sqrt((px - (ax + t * dx)) ** 2 + (py - (ay + t * dy)) ** 2);
   }
 
@@ -538,9 +575,12 @@ function createTrayIcon(connected) {
 
       for (let i = 0; i < 3; i++) {
         const angle = (i * 60 * Math.PI) / 180;
-        const cosA = Math.cos(angle), sinA = Math.sin(angle);
-        const ax = cx - halfLen * cosA, ay = cy - halfLen * sinA;
-        const bx = cx + halfLen * cosA, by = cy + halfLen * sinA;
+        const cosA = Math.cos(angle),
+          sinA = Math.sin(angle);
+        const ax = cx - halfLen * cosA,
+          ay = cy - halfLen * sinA;
+        const bx = cx + halfLen * cosA,
+          by = cy + halfLen * sinA;
         if (distToSegment(px, py, ax, ay, bx, by) <= halfWidth) {
           inShape = true;
           break;
@@ -793,26 +833,29 @@ ipcMain.handle("delete-printer", async (event, data) => {
   }
 });
 
-ipcMain.handle("test-printer", async (event, { connection_type, ip, port, usb_device_name }) => {
-  try {
-    if (connection_type === "usb") {
-      console.log(`[PRINT] Test USB → ${usb_device_name}`);
-      const { buildTestTicketUsb } = require("./printing");
-      const { printRawUsb } = require("./usbPrinters");
-      const ticket = buildTestTicketUsb(usb_device_name);
-      await printRawUsb(usb_device_name, ticket);
-      console.log(`[PRINT] Test USB OK → ${usb_device_name}`);
-    } else {
-      console.log(`[PRINT] Test WiFi → ${ip}:${port || 9100}`);
-      await printTestTicket(ip, port || 9100);
-      console.log(`[PRINT] Test WiFi OK → ${ip}`);
+ipcMain.handle(
+  "test-printer",
+  async (event, { connection_type, ip, port, usb_device_name }) => {
+    try {
+      if (connection_type === "usb") {
+        console.log(`[PRINT] Test USB → ${usb_device_name}`);
+        const { buildTestTicketUsb } = require("./printing");
+        const { printRawUsb } = require("./usbPrinters");
+        const ticket = buildTestTicketUsb(usb_device_name);
+        await printRawUsb(usb_device_name, ticket);
+        console.log(`[PRINT] Test USB OK → ${usb_device_name}`);
+      } else {
+        console.log(`[PRINT] Test WiFi → ${ip}:${port || 9100}`);
+        await printTestTicket(ip, port || 9100);
+        console.log(`[PRINT] Test WiFi OK → ${ip}`);
+      }
+      return { success: true };
+    } catch (error) {
+      console.error(`[PRINT] Test error: ${error.message}`);
+      return { success: false, error: error.message };
     }
-    return { success: true };
-  } catch (error) {
-    console.error(`[PRINT] Test error: ${error.message}`);
-    return { success: false, error: error.message };
-  }
-});
+  },
+);
 
 ipcMain.handle("get-agent-status", () => ({ connected: isConnected }));
 ipcMain.handle("get-status", () => ({ connected: isConnected }));
