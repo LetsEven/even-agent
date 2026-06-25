@@ -346,9 +346,18 @@ function setupOrderHandlers() {
   });
 }
 
+const PROD_WS_URL = "https://even-backend-production.up.railway.app/sync";
+
 async function startAgent() {
   const config = getConfig();
   if (!config) return;
+
+  // En builds de producción, forzar siempre la URL correcta
+  if (app.isPackaged && config.even?.wsUrl?.includes("localhost")) {
+    config.even.wsUrl = PROD_WS_URL;
+    fs.writeFileSync(getConfigPath(), JSON.stringify(config, null, 2), "utf8");
+    console.log("[AGENT] wsUrl corregido a producción");
+  }
 
   currentConfig = config;
   console.log("[AGENT] Iniciando...");
@@ -747,10 +756,7 @@ ipcMain.handle("save-full-config", async (event, configData) => {
       even: {
         branchId: configData.branchId,
         syncToken: configData.syncToken,
-        wsUrl:
-          configData.wsUrl ||
-          "https://even-backend-production.up.railway.app/sync",
-        //wsUrl: configData.wsUrl || "http://localhost:5000/sync",
+        wsUrl: PROD_WS_URL,
       },
     };
     fs.writeFileSync(getConfigPath(), JSON.stringify(config, null, 2), "utf8");
