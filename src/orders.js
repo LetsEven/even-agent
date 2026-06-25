@@ -377,6 +377,91 @@ async function updateDeclaracionCajero(
   }
 }
 
+// Asegurar que la forma de pago EVEN exista en formasdepago.
+// Retorna el idformadepago (número incremental) para usarlo al registrar el pago.
+async function ensureEvenPaymentMethod() {
+  const pool = getPool();
+
+  const exists = await pool
+    .request()
+    .query(`SELECT idformadepago FROM formasdepago WHERE descripcion = 'EVEN'`);
+
+  if (exists.recordset.length > 0) {
+    return exists.recordset[0].idformadepago;
+  }
+
+  // Calcular el siguiente ID numérico disponible
+  const nextIdResult = await pool.request().query(`
+    SELECT ISNULL(MAX(CAST(idformadepago AS INT)), 17) + 1 AS nextId
+    FROM formasdepago
+    WHERE idformadepago NOT LIKE '%[^0-9]%'
+  `);
+  const nextId = String(nextIdResult.recordset[0].nextId);
+
+  // Leer qué columnas existen en esta versión de Soft Restaurant
+  const colsResult = await pool.request().query(`
+    SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_NAME = 'formasdepago'
+  `);
+  const existingCols = new Set(
+    colsResult.recordset.map((r) => r.COLUMN_NAME.toLowerCase()),
+  );
+
+  // Columnas base (siempre presentes)
+  const cols = ["idformadepago", "descripcion", "tipo", "tipodecambio"];
+  const vals = [`'${nextId}'`, "'EVEN'", "2", "1.00"];
+
+  // Columnas opcionales — solo se incluyen si existen en esta versión
+  const optional = [
+    { col: "solicitareferencia", val: "0" },
+    { col: "prioridadboton", val: "20" },
+    { col: "cuentacontableimporte", val: "''" },
+    { col: "cuentacontablecomision", val: "''" },
+    { col: "cuentacontableivacomision", val: "''" },
+    { col: "comision", val: "0.00" },
+    { col: "visible", val: "1" },
+    { col: "aceptapropina", val: "1" },
+    { col: "subtipo", val: "0" },
+    { col: "prefijo1", val: "''" },
+    { col: "prefijo2", val: "''" },
+    { col: "codigodeprefijoconsulta", val: "''" },
+    { col: "codigodeprefijoacumred", val: "''" },
+    { col: "generapuntos", val: "0" },
+    { col: "formatoimpresion", val: "0" },
+    { col: "idfpagofiscal", val: "0" },
+    { col: "pagoenlinea", val: "0" },
+    { col: "tipotarjeta", val: "0" },
+    { col: "nofacturable", val: "0" },
+    { col: "tipoTarjetaBancaria", val: "1" },
+    { col: "idtipodescuento", val: "''" },
+    { col: "idformapago_SAT", val: "'04'" },
+    { col: "leerbrazalete", val: "0" },
+    { col: "cargohabitacion_eg", val: "0" },
+    { col: "visible_kiosco", val: "0" },
+    { col: "autocapturar", val: "0" },
+    { col: "sumatotal", val: "0" },
+    { col: "WorkspaceId", val: "NEWID()" },
+  ];
+
+  for (const { col, val } of optional) {
+    if (existingCols.has(col.toLowerCase())) {
+      cols.push(col);
+      vals.push(val);
+    }
+  }
+
+  await pool
+    .request()
+    .query(
+      `INSERT INTO formasdepago (${cols.join(", ")}) VALUES (${vals.join(", ")})`,
+    );
+
+  console.log(
+    `[PAYMENT] Forma de pago EVEN creada con idformadepago=${nextId}`,
+  );
+  return nextId;
+}
+
 // Aplicar pago a un folio
 async function applyPayment(
   folio,
@@ -411,19 +496,7 @@ async function applyPayment(
     if (paymentSource === "cash") {
       formaPago = "EF";
     } else {
-      // Tarjeta/terminal: buscar forma de pago que exista en el sistema
-      const formasResult = await pool.request().query(`
-        SELECT TOP 1 idformadepago FROM formasdepago
-        WHERE idformadepago IN ('TC', 'TAR', 'TD')
-        ORDER BY CASE idformadepago WHEN 'TC' THEN 1 WHEN 'TAR' THEN 2 WHEN 'TD' THEN 3 END
-      `);
-      if (formasResult.recordset.length > 0) {
-        formaPago = formasResult.recordset[0].idformadepago;
-      } else {
-        throw new Error(
-          "No se encontró forma de pago de tarjeta (TC, TAR, TD) en el sistema",
-        );
-      }
+      formaPago = await ensureEvenPaymentMethod();
     }
   }
   console.log(`[PAYMENT] Forma de pago: ${formaPago}, Turno: ${idTurnoCierre}`);

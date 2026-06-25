@@ -51,6 +51,18 @@ async function createGroup(name, displayOrder = 0) {
   await ensureSqlConnection();
   const pool = getPool();
 
+  // Si ya existe un grupo con ese nombre, reutilizarlo
+  const existing = await pool
+    .request()
+    .input("descripcion", sql.VarChar, name.substring(0, 30))
+    .query(`SELECT TOP 1 idgrupo FROM grupos WHERE descripcion = @descripcion`);
+
+  if (existing.recordset.length > 0) {
+    const idgrupo = existing.recordset[0].idgrupo;
+    console.log(`[SYNC] Grupo "${name}" ya existe con ID: ${idgrupo}`);
+    return { idgrupo, descripcion: name };
+  }
+
   // Obtener siguiente ID numérico incremental
   const maxResult = await pool.request().query(`
     SELECT ISNULL(MAX(CAST(idgrupo AS INT)), 0) + 1 as nextId
