@@ -833,10 +833,42 @@ function transformOrder(evenOrder) {
   };
 }
 
+// Obtener meseros activos de Soft Restaurant
+async function getWaiters() {
+  await ensureSqlConnection();
+  const pool = getPool();
+
+  const result = await pool
+    .request()
+    .query(
+      `SELECT idmesero, nombre FROM meseros WHERE visible = 1 ORDER BY nombre`,
+    );
+
+  return {
+    waiters: result.recordset.map((r) => ({ id: r.idmesero, name: r.nombre })),
+  };
+}
+
+// Cambiar el mesero asignado a un cheque abierto
+async function updateOrderWaiter(folio, idmesero) {
+  await ensureSqlConnection();
+  const pool = getPool();
+
+  await pool
+    .request()
+    .input("folio", sql.BigInt, folio)
+    .input("idmesero", sql.VarChar, idmesero)
+    .query(`UPDATE tempcheques SET idmesero = @idmesero WHERE folio = @folio`);
+
+  return { success: true };
+}
+
 module.exports = {
   insertOrder,
   applyPayment,
   addItemsToOrder,
   getChecksByTable,
   transformOrder,
+  getWaiters,
+  updateOrderWaiter,
 };

@@ -48,6 +48,8 @@ const {
   addItemsToOrder,
   getChecksByTable,
   transformOrder,
+  getWaiters,
+  updateOrderWaiter,
 } = require("./orders");
 const { setupSyncHandlers } = require("./sync");
 const {
@@ -313,6 +315,48 @@ function setupOrderHandlers() {
     } catch (error) {
       console.error("[ADD_ITEMS] Error:", error.message);
       syncSocket.emit("add_items_ack", {
+        requestId: data.requestId,
+        success: false,
+        error: error.message,
+      });
+    }
+  });
+
+  // Obtener meseros activos de Soft Restaurant
+  syncSocket.on("get_waiters", async (data) => {
+    try {
+      const result = await getWaiters();
+      console.log(`[WAITERS] ${result.waiters.length} mesero(s) encontrado(s)`);
+      syncSocket.emit("get_waiters_ack", {
+        requestId: data.requestId,
+        success: true,
+        ...result,
+      });
+    } catch (error) {
+      console.error("[WAITERS] Error:", error.message);
+      syncSocket.emit("get_waiters_ack", {
+        requestId: data.requestId,
+        success: false,
+        error: error.message,
+        waiters: [],
+      });
+    }
+  });
+
+  // Cambiar mesero de un cheque abierto
+  syncSocket.on("update_order_waiter", async (data) => {
+    try {
+      await updateOrderWaiter(data.folio, data.idmesero);
+      console.log(
+        `[WAITERS] Mesero del folio ${data.folio} actualizado a ${data.idmesero}`,
+      );
+      syncSocket.emit("update_order_waiter_ack", {
+        requestId: data.requestId,
+        success: true,
+      });
+    } catch (error) {
+      console.error("[WAITERS] Error actualizando mesero:", error.message);
+      syncSocket.emit("update_order_waiter_ack", {
         requestId: data.requestId,
         success: false,
         error: error.message,
