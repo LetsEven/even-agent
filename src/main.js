@@ -725,6 +725,7 @@ function createWindow() {
     show: false,
     backgroundColor: "#023828",
     icon: getIconPath(),
+    title: `Even Agent v${app.getVersion()}`,
     webPreferences: {
       contextIsolation: true,
       preload: path.join(__dirname, "preload.js"),
