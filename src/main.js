@@ -479,17 +479,15 @@ async function startAgent() {
 
     syncSocket.on("register_ack", async (data) => {
       console.log("[WS] Registrado:", data.message || "OK");
-      let turnoOpen = false;
       try {
         const turno = await getActiveTurno();
-        turnoOpen = !!turno;
+        lastKnownTurnoOpen = !!turno;
       } catch {
-        turnoOpen = false;
+        // SQL not ready yet after reconnect — keep last known state
       }
-      lastKnownTurnoOpen = turnoOpen;
       if (syncSocket && syncSocket.connected) {
-        syncSocket.emit("turno_status", { open: turnoOpen });
-        console.log(`[WS] turno_status emitido: open=${turnoOpen}`);
+        syncSocket.emit("turno_status", { open: lastKnownTurnoOpen });
+        console.log(`[WS] turno_status emitido: open=${lastKnownTurnoOpen}`);
       }
     });
 
@@ -548,12 +546,7 @@ async function startAgent() {
     syncSocket.on("disconnect", (reason) => {
       console.log("[WS] Desconectado:", reason);
       stopHeartbeat();
-      if (
-        reason === "io server disconnect" ||
-        reason === "io client disconnect"
-      ) {
-        updateStatus(false);
-      }
+      updateStatus(false);
     });
 
     syncSocket.on("reconnect", (attemptNumber) => {

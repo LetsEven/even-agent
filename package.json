@@ -1,6 +1,6 @@
 {
   "name": "even-agent",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Agente de sincronizacion Even - Soft Restaurant",
   "main": "src/main.js",
   "scripts": {
