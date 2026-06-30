@@ -737,6 +737,11 @@ function createWindow() {
     mainWindow.focus();
   });
 
+  // index.html's static <title> would otherwise override the version in the title bar on load
+  mainWindow.on("page-title-updated", (event) => {
+    event.preventDefault();
+  });
+
   mainWindow.loadFile(path.join(__dirname, "index.html"));
 
   mainWindow.webContents.on("before-input-event", (event, input) => {
