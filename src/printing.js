@@ -394,6 +394,7 @@ async function printJobFromBackend({ items, orderInfo }) {
   }
 
   const jobs = [];
+  const jobLabels = [];
 
   for (const printer of activePrinters) {
     const role = printer.role || "all";
@@ -410,35 +411,30 @@ async function printJobFromBackend({ items, orderInfo }) {
     });
 
     if (printer.connection_type === "usb" && printer.usb_device_name) {
-      jobs.push(
-        printRawUsb(printer.usb_device_name, ticketBuf)
-          .then(() =>
-            console.log(
-              `[PRINT] ✅ print_job USB enviado a ${printer.usb_device_name} (${role})`,
-            ),
-          )
-          .catch((err) =>
-            console.error(
-              `[PRINT] ❌ Error USB ${printer.usb_device_name}: ${err.message}`,
-            ),
-          ),
-      );
+      jobs.push(printRawUsb(printer.usb_device_name, ticketBuf));
+      jobLabels.push(`USB:${printer.usb_device_name}(${role})`);
     } else {
-      jobs.push(
-        sendToPrinter(printer.ip, printer.port || PRINTER_PORT, ticketBuf)
-          .then(() =>
-            console.log(
-              `[PRINT] ✅ print_job enviado a ${printer.ip} (${role})`,
-            ),
-          )
-          .catch((err) =>
-            console.error(`[PRINT] ❌ Error en ${printer.ip}: ${err.message}`),
-          ),
-      );
+      jobs.push(sendToPrinter(printer.ip, printer.port || PRINTER_PORT, ticketBuf));
+      jobLabels.push(`TCP:${printer.ip}(${role})`);
     }
   }
 
-  await Promise.allSettled(jobs);
+  if (jobs.length === 0) return;
+
+  const results = await Promise.allSettled(jobs);
+  const failures = [];
+  results.forEach((r, i) => {
+    if (r.status === "fulfilled") {
+      console.log(`[PRINT] ✅ print_job enviado a ${jobLabels[i]}`);
+    } else {
+      console.error(`[PRINT] ❌ Error en ${jobLabels[i]}: ${r.reason?.message}`);
+      failures.push(jobLabels[i]);
+    }
+  });
+
+  if (failures.length > 0) {
+    throw new Error(`Fallo en impresoras: ${failures.join(", ")}`);
+  }
 }
 
 function buildTestTicketUsb(printerName) {
