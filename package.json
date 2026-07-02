@@ -28,7 +28,7 @@
       "signAndEditExecutable": true,
       "certificateFile": "certs/even-codesign.pfx",
       "certificatePassword": "even2026",
-      "artifactName": "Even Agent.${ext}",
+      "artifactName": "Even Agent ${version}.${ext}",
       "icon": "assets/icon-white.ico"
     },
     "files": [
